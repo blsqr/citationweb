@@ -1,3 +1,18 @@
 # -*- coding: utf-8 -*-
-'''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
+'''(Used for testing the functions of the citationweb package)'''
+
+from pybtex.database import parse_file
+import citationweb as cweb
+
+# Settings
+in_file 	= "lib.bib"
+out_file	= "lib_new.bib"
+
+
+if __name__ == '__main__':
+	bdata 		= parse_file(in_file)
+
+	new_bdata 	= cweb.add_missing_links(bdata)
+
+	new_bdata.to_file(out_file, 'bibtex') #TODO check compatibility of saving format
 

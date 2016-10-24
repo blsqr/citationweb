@@ -1,1 +1,3 @@
 *.bib
+citationweb/__pycache__
+*.sublime-workspace
