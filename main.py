@@ -10,9 +10,15 @@ out_file	= "lib_new.bib"
 
 
 if __name__ == '__main__':
+	# Import
 	bdata 		= parse_file(in_file)
+	comments 	= cweb.extract_comments(in_file)
 
+	# Parse
 	new_bdata 	= cweb.add_missing_links(bdata)
 
-	new_bdata.to_file(out_file, 'bibtex') #TODO check compatibility of saving format
+	# Export
+	new_bdata.to_file(out_file, 'bibtex')
+	with open(out_file, 'a') as f:
+		f.write(comments)
 
