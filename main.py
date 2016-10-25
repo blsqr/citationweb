@@ -15,10 +15,11 @@ if __name__ == '__main__':
 	comments 	= cweb.extract_comments(in_file)
 
 	# Parse
-	new_bdata 	= cweb.add_missing_links(bdata)
+	cweb.add_missing_links(bdata)
+	cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
 
 	# Export
-	new_bdata.to_file(out_file, 'bibtex')
+	bdata.to_file(out_file, 'bibtex')
 	with open(out_file, 'a') as f:
 		f.write(comments)
 

@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 '''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
 
+# TODO:
+#	- make sorting apply not only to parsed entries
+#	- improve behaviour of comment extraction by actually parsing opening and closing brackets of the comments section
+#
+# ------------------------------------------
+
 import copy
 import codecs
 
@@ -10,7 +16,6 @@ from pybtex.database import BibliographyData
 def extract_comments(filepath):
 	'''This method extracts the @comment{} section or sections of a .bib file. These sections are used in programs like BibDesk to store the information of static and smart folders, and are discarded when using parse_file of pybtex.database.
 	Note that this relies on having the @comments section at the end of the file.'''
-	# TODO improve behaviour by parsing opening and closing brackets of comments section
 
 	comments 			= ''
 	comments_reached 	= False
@@ -27,18 +32,18 @@ def extract_comments(filepath):
 
 
 
-
-
-
-
 def add_missing_links(bdata):
-	'''Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there.'''
+	'''Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there. Works in-place of the passed bibliography data.'''
 
-	new_bdata = copy.deepcopy(bdata)
+	# Initialisation
+	new_bdata 	= copy.deepcopy(bdata)
+	n 			= {'cites': 0, 'cited-by': 0}
 
+	# Checks
 	if not isinstance(bdata, BibliographyData):
 		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
 
+	# Loop over all article citekeys
 	for citekey in bdata.entries.keys():
 		entry 	= bdata.entries[citekey]
 
@@ -47,35 +52,54 @@ def add_missing_links(bdata):
 
 		# find target entries and add the respective keys
 		for target_key in cites:
-			new_bdata.entries[target_key].fields['Cited-by'] = _append_citekey(new_bdata.entries[target_key].fields.get('Cited-by'), citekey)
+			n['cited-by'] 	+= _append_citekey(new_bdata.entries[target_key],
+			                                   'Cited-By', citekey)
 
 		for target_key in cited_by:
-			new_bdata.entries[target_key].fields['Cites'] = _append_citekey(new_bdata.entries[target_key].fields.get('Cites'), citekey)
+			n['cites'] 		+= _append_citekey(new_bdata.entries[target_key],
+			                                   'Cites', citekey)
 
-	# Done. Return the new bibliography data
-	return new_bdata
+	print("Added {} 'cites' and {} 'cited-by' entries.".format(n['cites'], n['cited-by']))
+
+	# Done. Put the new bibliography data in place
+	bdata 	= new_bdata
+	return True
 
 
+def sort_fields(bdata, fieldnames, sep=', '):
+	'''Sorts the content of the field with names inside the list fieldnames. Works in place of the bibliography data.'''
 
+	for citekey in bdata.entries.keys():
+		entry 	= bdata.entries[citekey]
 
+		for fieldname in fieldnames:
+			new_entry	= _str_to_list(entry.fields.get(fieldname)).sort()
 
+			if new_entry is not None:
+				entry = sep.join(new_entry)
 
+	print("Sorted fields {}.".format(fieldnames))
+	return True
 
 # -----------------------------------------------------------------------------
 # Private methods -------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-def _append_citekey(ckey_str, ckey, verbatim=True, sep=', '):
-	'''Appends string ckey to the string of citekeys ckey_str (if it does not exist already) and returns the re-parsed string of all citekeys.'''
-	ckeys = _str_to_list(ckey_str)
+def _append_citekey(entry, fieldname, ckey, sep=', '):
+	'''Append a citekey to the entry.fields[fieldname] string of citekeys (if it does not exist already). Note, that this works directly on the passed entry.'''
+	ckeys = _str_to_list(entry.fields.get(fieldname))
 
 	if ckey not in ckeys:
-		if verbatim:
-			print("Appending {} to {}".format(ckey, ckeys))
-
 		ckeys.append(ckey)
+		entry.fields[fieldname] = sep.join(ckeys)
 
-	return sep.join(ckeys)
+		return True
+
+	else:
+		entry.fields[fieldname] = sep.join(ckeys)
+
+		return False
+
 
 
 def _str_to_list(s, separators=None, remove_spaces=True):
