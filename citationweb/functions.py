@@ -59,11 +59,10 @@ def add_missing_links(bdata):
 			n['cites'] 		+= _append_citekey(new_bdata.entries[target_key],
 			                                   'Cites', citekey)
 
-	print("Added {} 'cites' and {} 'cited-by' entries.".format(n['cites'], n['cited-by']))
+	print("Added {} missing 'cites' and {} missing 'cited-by' entries.".format(n['cites'], n['cited-by']))
 
 	# Done. Put the new bibliography data in place
-	bdata 	= new_bdata
-	return True
+	return new_bdata
 
 
 def sort_fields(bdata, fieldnames, sep=', '):
@@ -73,13 +72,15 @@ def sort_fields(bdata, fieldnames, sep=', '):
 		entry 	= bdata.entries[citekey]
 
 		for fieldname in fieldnames:
-			new_entry	= _str_to_list(entry.fields.get(fieldname)).sort()
+			field_content	= _str_to_list(entry.fields.get(fieldname))
 
-			if new_entry is not None:
-				entry = sep.join(new_entry)
+			if field_content is not None and field_content != []:
+				field_content.sort()
+				bdata.entries[citekey].fields[fieldname] = sep.join(field_content)
 
 	print("Sorted fields {}.".format(fieldnames))
-	return True
+
+	return bdata
 
 # -----------------------------------------------------------------------------
 # Private methods -------------------------------------------------------------

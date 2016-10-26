@@ -14,9 +14,9 @@ if __name__ == '__main__':
 	bdata 		= parse_file(in_file)
 	comments 	= cweb.extract_comments(in_file)
 
-	# Parse
-	cweb.add_missing_links(bdata)
-	cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
+	# Process
+	bdata = cweb.add_missing_links(bdata)
+	bdata = cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
 
 	# Export
 	bdata.to_file(out_file, 'bibtex')
