@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
-'''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
+'''This file defines all the basic functions of the citationweb package, e.g. import/export and simple processing methods.'''
 
 # TODO:
 #	- improve behaviour of comment extraction by actually parsing opening and closing brackets of the comments section
-#
-# ------------------------------------------
+
+
 
 import copy
 import codecs
 
 from pybtex.database import BibliographyData, parse_file
 
+# -----------------------------------------------------------------------------
+# Import / Export -------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def import_bdata(bibfile):
 	'''This method imports the bibliography from a file and returns its content as a BibliographyData object and a string of comments'''
@@ -61,6 +64,10 @@ def extract_appendix(filepath, start_str):
 
 	return appdx
 
+
+# -----------------------------------------------------------------------------
+# Simple processing functions -------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def add_missing_links(bdata):
 	'''Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there. Works in-place of the passed bibliography data.'''
@@ -135,15 +142,14 @@ def convert_url_to_doi(bdata):
 			# there already is a DOI field in this entry
 			continue
 
-		while entry.fields.get('Bdsk-Url-'+str(n)) is not None:
+		while entry.fields.get('Bdsk-Url-'+str(n)) is not None and n <= 5:
 			doi	= _extract_doi_from_url(entry.fields.get('Bdsk-Url-'+str(n)))
 
-			if doi is not None or n > 5:
+			if doi is not None:
 				bdata.entries[citekey].fields['DOI'] = doi
 
 				num_converted += 1
 				break
-
 			else:
 				# continue
 				n += 1

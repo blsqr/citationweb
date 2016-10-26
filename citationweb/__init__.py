@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-'''Manage methods available in package'''
+'''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
 
 # import all public (!) functions
 from .functions import *
+from .crosslink import *

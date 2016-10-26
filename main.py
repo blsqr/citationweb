@@ -12,10 +12,16 @@ if __name__ == '__main__':
 	# Import
 	bdata, comments	= cweb.import_bdata(in_file)
 
-	# Process
+	# Preprocessing
+	bdata = cweb.convert_url_to_doi(bdata)
+
+	# Crosslink bibliography entries by extracting citations from each pdf and checking if they are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry
+	print("\nStarting to scan citations:")
+	bdata = cweb.crosslink(bdata)
+
+	# Postprocessing
 	bdata = cweb.add_missing_links(bdata)
 	bdata = cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
-	bdata = cweb.convert_url_to_doi(bdata)
 
 	# Export
 	cweb.export_bdata(bdata, out_file, appendix=comments)
