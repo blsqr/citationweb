@@ -30,7 +30,6 @@ def crosslink(bdata):
 	# Initialisations
 	cnt 	= (0, len(bdata.entries))
 	cmd 	= ["pdf-extract", "extract", "--resolved_references"]
-	xml_start='<?xml version="1.0"?>'
 
 	# Looping over all entries
 	for citekey in bdata.entries.keys():
@@ -38,31 +37,31 @@ def crosslink(bdata):
 
 		cnt 	= (cnt[0]+1, cnt[1])
 
-		print("\t{}/{}:".format(*cnt))
+		# # for testing only Hordijk2013a
+		# if cnt[0] != 22:
+		# 		continue
+		print("\n{}/{}:".format(*cnt), end='')
 
 		for path in _resolve_filepaths(entry):
-			if cnt[0] != 22:
-				continue
-
-			print("\t\tExtracting citations from {}:".format(os.path.basename(path)))
+			print("\tExtracting citations from {}".format(os.path.basename(path)))
 
 			# Get citations. Output is terminal prints + xml with results
-			output 	= subprocess.check_output(cmd + [path],
-			                                  shell=False,
-			                                  stderr=subprocess.STDOUT)
-
-			print(str(output))
-
-			output 	= str(output)[str(output).find(xml_start)+len(xml_start):]
-			output 	= output.replace(r"\n","")
-
-			print(output)
+			try:
+				output 	= subprocess.check_output(cmd + [path],
+			    	                              shell=False,
+			        	                          stderr=subprocess.STDOUT)
+			except:
+				# does not work with this file
+				continue
 
 			# parse XML
-			root 	= ET.fromstring(output)
+			root 	= ET.fromstring(_prepare_xml(output))
 
 			for res_ref in root.findall("resolved_reference"):
-				print(res_ref.get('doi'))
+				print("\t{}".format(res_ref.get('doi')))
+
+
+	print("\nDone crosslinking.\n")
 
 	return bdata
 
@@ -91,3 +90,16 @@ def _resolve_filepaths(entry):
 		n += 1
 
 	return paths
+
+
+def _prepare_xml(s):
+	'''Preprocesses the xml string to be readable by the XML parser'''
+
+	xml_start	= '<?xml version="1.0"?>'
+	xml_end		= '</pdf>'
+
+	s 	= str(s)
+	s 	= s[s.find(xml_start):s.find(xml_end)+len(xml_end)]
+	s 	= s.replace(r"\n"," ")
+
+	return s
