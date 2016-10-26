@@ -16,7 +16,7 @@ def import_bdata(bibfile):
 	'''This method imports the bibliography from a file and returns its content as a BibliographyData object and a string of comments'''
 
 	bdata 		= parse_file(bibfile)
-	comments 	= extract_comments(bibfile)
+	comments 	= extract_appendix(bibfile, "@comment{")
 
 	# Info
 	if len(comments) > 0:
@@ -26,6 +26,7 @@ def import_bdata(bibfile):
 
 	return bdata, comments
 
+
 def export_bdata(bdata, targetfile, appendix=None):
 	'''Exports the BibliographyData object (and, if passed, an appendix like comments section) to a target.'''
 	bdata.to_file(targetfile, 'bibtex')
@@ -34,30 +35,31 @@ def export_bdata(bdata, targetfile, appendix=None):
 		with open(targetfile, 'a') as f:
 			f.write(appendix)
 
-		print("\nBibliography and appendix written to '{}'.".format(targetfile))
+		print("\nBibliography and appendix exported to '{}'.".format(targetfile))
 	else:
-		print("\nBibliography written to '{}'.".format(targetfile))
+		print("\nBibliography exported to '{}'.".format(targetfile))
 
 	return
 
 
+def extract_appendix(filepath, start_str):
+	'''This method extracts a part at the end of a file, starting with a start_str, for example the @comment{} section or sections of a .bib file.
 
-def extract_comments(filepath):
-	'''This method extracts the @comment{} section or sections of a .bib file. These sections are used in programs like BibDesk to store the information of static and smart folders, and are discarded when using parse_file of pybtex.database.
-	Note that this relies on having the @comments section at the end of the file.'''
+	These sections are used in programs like BibDesk to store the information of static and smart folders, and are discarded when using parse_file of pybtex.database.
+	Note that this relies on having the appendix section at the end of the file.'''
 
-	comments 			= ''
-	comments_reached 	= False
+	appdx 			= ''
+	appdx_reached 	= False
 
 	with codecs.open(filepath, 'r', 'utf-8') as bibfile:
 		for line in bibfile:
-			if "@comment{" in line.lower():
-				comments_reached = True
+			if start_str in line.lower():
+				appdx_reached = True
 
-			if comments_reached:
-				comments += line
+			if appdx_reached:
+				appdx += line
 
-	return comments
+	return appdx
 
 
 def add_missing_links(bdata):
