@@ -30,6 +30,7 @@ def crosslink(bdata):
 	# Initialisations
 	cnt 	= (0, len(bdata.entries))
 	cmd 	= ["pdf-extract", "extract", "--resolved_references"]
+	max_num_pages = 25
 
 	# Looping over all entries
 	for citekey in bdata.entries.keys():
@@ -43,20 +44,37 @@ def crosslink(bdata):
 		print("\n{}/{}:".format(*cnt), end='')
 
 		for path in _resolve_filepaths(entry):
-			print("\tExtracting citations from {}".format(os.path.basename(path)))
+			num_pages = _count_pages(path)
+
+			print("\tExtracting citations from {} ({} pages)".format(os.path.basename(path), num_pages))
+
+			if num_pages > max_num_pages:
+				print("too many (>{}) pages --> skipping file".format(max_num_pages))
+				continue
 
 			# Get citations. Output is terminal prints + xml with results
 			try:
 				output 	= subprocess.check_output(cmd + [path],
 			    	                              shell=False,
 			        	                          stderr=subprocess.STDOUT)
-			except:
+			except subprocess.CalledProcessError:
 				# does not work with this file
+				print("\t(not readable)")
 				continue
 
-			# parse XML
-			root 	= ET.fromstring(_prepare_xml(output))
+			except KeyboardInterrupt:
+				print("\n-- Cancelled --")
+				exit()
 
+
+			# parse XML
+			try:
+				root 	= ET.fromstring(_prepare_xml(output))
+			except ET.ParseError as xml_err:
+				print("Error in parsing XML: {}".format(xml_err))
+				continue
+
+			# Extract DOIs
 			for res_ref in root.findall("resolved_reference"):
 				print("\t{}".format(res_ref.get('doi')))
 
@@ -103,3 +121,8 @@ def _prepare_xml(s):
 	s 	= s.replace(r"\n"," ")
 
 	return s
+
+rxcountpages = re.compile(r"$\s*/Type\s*/Page[/\s]", re.MULTILINE|re.DOTALL)
+def _count_pages(filename):
+    data = open(filename,"rb").read()
+    return len(rxcountpages.findall(str(data)))
