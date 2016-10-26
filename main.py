@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 '''(Used for testing the functions of the citationweb package)'''
 
-from pybtex.database import parse_file
 import citationweb as cweb
 
 # Settings
@@ -11,15 +10,12 @@ out_file	= "lib_new.bib"
 
 if __name__ == '__main__':
 	# Import
-	bdata 		= parse_file(in_file)
-	comments 	= cweb.extract_comments(in_file)
+	bdata, comments	= cweb.import_bdata(in_file)
 
 	# Process
 	bdata = cweb.add_missing_links(bdata)
 	bdata = cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
+	bdata = cweb.convert_url_to_doi(bdata)
 
 	# Export
-	bdata.to_file(out_file, 'bibtex')
-	with open(out_file, 'a') as f:
-		f.write(comments)
-
+	cweb.export_bdata(bdata, out_file, appendix=comments)

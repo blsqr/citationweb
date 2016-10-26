@@ -2,7 +2,6 @@
 '''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
 
 # TODO:
-#	- make sorting apply not only to parsed entries
 #	- improve behaviour of comment extraction by actually parsing opening and closing brackets of the comments section
 #
 # ------------------------------------------
@@ -10,7 +9,37 @@
 import copy
 import codecs
 
-from pybtex.database import BibliographyData
+from pybtex.database import BibliographyData, parse_file
+
+
+def import_bdata(bibfile):
+	'''This method imports the bibliography from a file and returns its content as a BibliographyData object and a string of comments'''
+
+	bdata 		= parse_file(bibfile)
+	comments 	= extract_comments(bibfile)
+
+	# Info
+	if len(comments) > 0:
+		print("Imported bibfile '{}' and comments. Bibliography has {} entries.\n".format(bibfile, len(bdata.entries)))
+	else:
+		print("Imported bibfile '{}'. Bibliography has {} entries.\n".format(bibfile, len(bdata.entries)))
+
+	return bdata, comments
+
+def export_bdata(bdata, targetfile, appendix=None):
+	'''Exports the BibliographyData object (and, if passed, an appendix like comments section) to a target.'''
+	bdata.to_file(targetfile, 'bibtex')
+
+	if appendix is not None:
+		with open(targetfile, 'a') as f:
+			f.write(appendix)
+
+		print("\nBibliography and appendix written to '{}'.".format(targetfile))
+	else:
+		print("\nBibliography written to '{}'.".format(targetfile))
+
+	return
+
 
 
 def extract_comments(filepath):
@@ -29,7 +58,6 @@ def extract_comments(filepath):
 				comments += line
 
 	return comments
-
 
 
 def add_missing_links(bdata):
@@ -68,6 +96,10 @@ def add_missing_links(bdata):
 def sort_fields(bdata, fieldnames, sep=', '):
 	'''Sorts the content of the field with names inside the list fieldnames. Works in place of the bibliography data.'''
 
+	# Checks
+	if not isinstance(bdata, BibliographyData):
+		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
+
 	for citekey in bdata.entries.keys():
 		entry 	= bdata.entries[citekey]
 
@@ -78,7 +110,43 @@ def sort_fields(bdata, fieldnames, sep=', '):
 				field_content.sort()
 				bdata.entries[citekey].fields[fieldname] = sep.join(field_content)
 
-	print("Sorted fields {}.".format(fieldnames))
+	print("Sorted fields {} alphabetically.".format(fieldnames))
+
+	return bdata
+
+
+def convert_url_to_doi(bdata):
+	'''Tries to extract the DOI from the Bdsk-url-N field and adds it as an extra field.'''
+
+	# Initialisation
+	num_converted 	= 0
+
+	# Checks
+	if not isinstance(bdata, BibliographyData):
+		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
+
+	for citekey in bdata.entries.keys():
+		n 		= 1
+		entry 	= bdata.entries[citekey]
+
+		if entry.fields.get('doi') is not None:
+			# there already is a DOI field in this entry
+			continue
+
+		while entry.fields.get('Bdsk-Url-'+str(n)) is not None:
+			doi	= _extract_doi_from_url(entry.fields.get('Bdsk-Url-'+str(n)))
+
+			if doi is not None or n > 5:
+				bdata.entries[citekey].fields['DOI'] = doi
+
+				num_converted += 1
+				break
+
+			else:
+				# continue
+				n += 1
+
+	print("Converted {} remote URLs to DOIs.".format(num_converted))
 
 	return bdata
 
@@ -102,7 +170,6 @@ def _append_citekey(entry, fieldname, ckey, sep=', '):
 		return False
 
 
-
 def _str_to_list(s, separators=None, remove_spaces=True):
 	'''Takes an entry string and parses it to a list. Sevaral separators can be passed and spaces can be removed before splitting the string to the list.'''
 
@@ -122,3 +189,16 @@ def _str_to_list(s, separators=None, remove_spaces=True):
 
 	return s.split(separators[0])
 
+
+def _extract_doi_from_url(url, tld="http://dx.doi.org/"):
+	'''Extracts a DOI from a tld-type url specifying the doi, e.g. addresses starting with http://dx.doi.org/'''
+
+	pos = url.find(tld)
+
+	if pos >= 0:
+		# Returns everything after the tld-string
+		return url[pos + len(tld):]
+
+	else:
+		# No recognisable part in the URL, no conversion possible
+		return None

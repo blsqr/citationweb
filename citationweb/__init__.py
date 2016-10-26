@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
-'''Import public functions for citationweb package'''
+'''Manage methods available in package'''
 
-from .functions import add_missing_links, extract_comments, sort_fields
+# import all public (!) functions
+from .functions import *
