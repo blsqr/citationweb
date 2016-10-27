@@ -4,8 +4,8 @@
 import citationweb as cweb
 
 # Settings
-in_file 	= "library_small_new.bib"
-out_file	= "library_small_new2.bib"
+in_file 	= "library.bib"
+out_file	= "library_processed.bib"
 
 
 if __name__ == '__main__':

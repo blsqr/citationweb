@@ -5,7 +5,6 @@
 # 	- implement pdf-extract as ruby script instead of interfacing with the shell via subprocess
 #	- multiprocessing
 # 	- compare not only by DOIs but also ISBN, URI, ...
-# 	- save in files whether an entry was readable or not, e.g. by having the 'Extracted-DOIs' field but without content.
 
 # FIXME
 #	- papers not being read properly (e.g. Flack2014, Szathmary1997)
@@ -53,7 +52,7 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 		# # for testing only Hordijk2013a
 		# if cnt[0] != 22:
 		# 		continue
-		print("\n{}/{}:".format(*cnt), end='')
+		print("\n\n{1:}/{2:}:\tExtracting citations from {0:}:\n".format(citekey, *cnt))
 
 		if read_dois_from == 'bib':
 			target_dois = extract_citation_dois_from_field(bdata.entries[citekey])
@@ -62,23 +61,27 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 			target_dois = extract_citation_dois_from_pdfs(bdata.entries[citekey])
 
 		elif read_dois_from == 'auto':
-			# first check, if this entry has an entry in the bibfile
+			# first check, if this entry has an entry in the bibfile. In that case it was parsed already and does not need to be read again
 			target_dois = extract_citation_dois_from_field(bdata.entries[citekey])
+			# note, that there is the possiblity, that it was not possible to read the pdf. In that case, no DOI was extracted and the target_dois list will just be [''] (with the empty string inside!)
 
 			if target_dois is None:
-				# not present yet --> check the pdf
+				# field was not present --> check the pdfs
 				target_dois = extract_citation_dois_from_pdfs(bdata.entries[citekey])
+			else:
+				print("\tFrom field 'Extracted-DOIs' in bibtex entry:")
 
 		else:
-			raise ValueError("No mode {} possible, choose between bib, pdf, and auto.")
+			raise ValueError("Invalid value {} for read_dois_from argument. Choose between bib, pdf, and auto.".format(read_dois_from))
 
 
-		if target_dois is None:
-			# none extracted, no point in continuing
-			continue
 
-		# Done with reading all files or entries. Try to match the extracted DOIs or those found in the bibfile with entries from the bibliography.
+		# Try to match the extracted DOIs or those found in the bibfile with entries from the bibliography.
 		for target_doi in target_dois:
+			if target_doi == '':
+				print("\t(marked as un-readable)")
+				break
+
 			target_citekey 	= _find_citekey_from_doi(bdata, target_doi)
 
 			if target_citekey is not None:
@@ -113,7 +116,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=33, verbatim=True):
 
 	num_pages 	= _count_pages(path)
 	if verbatim:
-		print("\tExtracting citations from {} ({} pages)".format(os.path.basename(path), num_pages if num_pages != 0 else '?'))
+		print("\tReading {} ({} pages)".format(os.path.basename(path), num_pages if num_pages != 0 else '?'))
 
 	if num_pages > max_num_pages:
 		if verbatim:
@@ -130,7 +133,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=33, verbatim=True):
 		# does not work with this file
 		if verbatim:
 			print("\t(not readable)")
-		return []
+		return ['']
 
 	except KeyboardInterrupt:
 		print("\n-- Cancelled --")
@@ -148,11 +151,7 @@ def extract_citation_dois_from_pdfs(entry, **kwargs):
 	for path in _resolve_filepaths(entry):
 		target_dois 	+= extract_citation_dois_from_pdf(path, **kwargs)
 
-	if len(target_dois) > 0:
-		return target_dois
-	else:
-		return None
-
+	return target_dois
 
 def extract_citation_dois_from_field(entry):
 	'''Checks if there is a field 'Extracted-DOIs' in the entry, parses it to a list and returns it.'''
