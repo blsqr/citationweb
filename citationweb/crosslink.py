@@ -3,18 +3,25 @@
 
 # TODO
 # 	- implement test if pdf-extract is installed or not
-#	- skip books
+#	- skip longs pdfs, theses, books
+# 	- implement pdf-extract as ruby script?
+#	- multiprocessing
 
+# FIXME
+#	- page-number
+#	- papers not being read properly (e.g. Flack2014, Szathmary1997)
+#	- XML parsing problems
 
-import re
 import os
+import copy
+import re
 from base64 import b64decode
 import subprocess
 import xml.etree.ElementTree as ET
 
 from pybtex.database import BibliographyData
 
-from .functions import _str_to_list, _append_citekey
+from .functions import _append_citekey
 
 def crosslink(bdata):
 	'''The crosslink method extracts citations from each pdf in the bibliography and checks if the target entries are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry.
@@ -28,14 +35,14 @@ def crosslink(bdata):
 		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
 
 	# Initialisations
-	cnt 	= (0, len(bdata.entries))
-	cmd 	= ["pdf-extract", "extract", "--resolved_references"]
+	new_bdata	= copy.deepcopy(bdata)
+	cnt 		= (0, len(bdata.entries))
+	cnt_added 	= 0
+	cmd 		= ["pdf-extract", "extract", "--resolved_references"]
 	max_num_pages = 25
 
 	# Looping over all entries
 	for citekey in bdata.entries.keys():
-		entry 	= bdata.entries[citekey]
-
 		cnt 	= (cnt[0]+1, cnt[1])
 
 		# # for testing only Hordijk2013a
@@ -43,7 +50,7 @@ def crosslink(bdata):
 		# 		continue
 		print("\n{}/{}:".format(*cnt), end='')
 
-		for path in _resolve_filepaths(entry):
+		for path in _resolve_filepaths(bdata.entries[citekey]):
 			num_pages = _count_pages(path)
 
 			print("\tExtracting citations from {} ({} pages)".format(os.path.basename(path), num_pages))
@@ -74,14 +81,28 @@ def crosslink(bdata):
 				print("Error in parsing XML: {}".format(xml_err))
 				continue
 
-			# Extract DOIs
+			# Extract DOIs and compare to those in library
 			for res_ref in root.findall("resolved_reference"):
-				print("\t{}".format(res_ref.get('doi')))
+				target_doi 		= res_ref.get('doi')
+
+				target_citekey 	= _find_citekey_from_doi(bdata, target_doi)
+
+				if target_citekey is not None:
+
+					# Add (one side of) link
+					cnt_added 	+= _append_citekey(new_bdata.entries[citekey], 'Cites', target_citekey)
+
+					print("\t{:<40} --> {}".format(target_doi, target_citekey))
+
+					print("\t\t'Cites': {}".format(new_bdata.entries[citekey].fields.get('Cites')))
 
 
-	print("\nDone crosslinking.\n")
+				else:
+					print("\t{:<40} --x".format(target_doi))
 
-	return bdata
+	print("\nAdded {} new links.\n".format(cnt_added))
+
+	return new_bdata
 
 
 
@@ -122,7 +143,28 @@ def _prepare_xml(s):
 
 	return s
 
+
+def _find_citekey_from_doi(bdata, target_doi):
+	'''Loops over all entries in bibliography data and -- if found -- returns the citekey of an entry, otherwise returns None.'''
+	# NOTE consider making public?
+
+	# Checks
+	if not isinstance(bdata, BibliographyData):
+		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
+
+	for citekey in bdata.entries.keys():
+		if bdata.entries[citekey].fields.get('doi') == target_doi:
+			return citekey
+
+	return None
+
+
+
 rxcountpages = re.compile(r"$\s*/Type\s*/Page[/\s]", re.MULTILINE|re.DOTALL)
 def _count_pages(filename):
-    data = open(filename,"rb").read()
-    return len(rxcountpages.findall(str(data)))
+	'''Returns the number of pages of a PDF document'''
+	# FIXME not working!
+
+	data = open(filename,"rb").read()
+	# return len(rxcountpages.findall(str(data)))
+	return "?"
