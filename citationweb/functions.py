@@ -89,12 +89,10 @@ def add_missing_links(bdata):
 
 		# find target entries and add the respective keys
 		for target_key in cites:
-			n['cited-by'] 	+= _append_citekey(new_bdata.entries[target_key],
-			                                   'Cited-By', citekey)
+			n['cited-by'] 	+= _append_citekey(new_bdata.entries.get(target_key), 'Cited-By', citekey)
 
 		for target_key in cited_by:
-			n['cites'] 		+= _append_citekey(new_bdata.entries[target_key],
-			                                   'Cites', citekey)
+			n['cites'] 		+= _append_citekey(new_bdata.entries.get(target_key), 'Cites', citekey)
 
 	print("Added {} missing 'cites' and {} missing 'cited-by' entries.".format(n['cites'], n['cited-by']))
 
@@ -164,6 +162,10 @@ def convert_url_to_doi(bdata):
 
 def _append_citekey(entry, fieldname, ckey, sep=', '):
 	'''Append a citekey to the entry.fields[fieldname] string of citekeys (if it does not exist already). Note, that this works directly on the passed entry.'''
+	if entry is None:
+		# there is no such entry, most probably because this method was called with the .__getitem__ or .get() in the function call and the key was not present
+		return False
+
 	ckeys = _str_to_list(entry.fields.get(fieldname))
 
 	if ckey not in ckeys:

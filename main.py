@@ -4,8 +4,8 @@
 import citationweb as cweb
 
 # Settings
-in_file 	= "lib.bib"
-out_file	= "lib_new.bib"
+in_file 	= "library_small_new.bib"
+out_file	= "library_small_new2.bib"
 
 
 if __name__ == '__main__':
@@ -16,7 +16,6 @@ if __name__ == '__main__':
 	bdata = cweb.convert_url_to_doi(bdata)
 
 	# Crosslink bibliography entries by extracting citations from each pdf and checking if they are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry
-	print("\nStarting to scan citations:")
 	bdata = cweb.crosslink(bdata)
 
 	# Postprocessing
