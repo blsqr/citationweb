@@ -72,13 +72,14 @@ def extract_appendix(filepath, start_str):
 def add_missing_links(bdata):
 	'''Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there. Works in-place of the passed bibliography data.'''
 
+	# Checks
+	if not isinstance(bdata, BibliographyData):
+		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
+
 	# Initialisation
 	new_bdata 	= copy.deepcopy(bdata)
 	n 			= {'cites': 0, 'cited-by': 0}
 
-	# Checks
-	if not isinstance(bdata, BibliographyData):
-		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
 
 	# Loop over all article citekeys
 	for citekey in bdata.entries.keys():
@@ -98,6 +99,43 @@ def add_missing_links(bdata):
 
 	# Done. Put the new bibliography data in place
 	return new_bdata
+
+
+def remove_self_citations(bdata):
+	'''Removes the own citekey from the cites and cited-by fields'''
+
+	# Checks
+	if not isinstance(bdata, BibliographyData):
+		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
+
+	# Initialisation
+	new_bdata 	= copy.deepcopy(bdata)
+
+	# Loop over all article citekeys
+	for citekey in bdata.entries.keys():
+		entry 	= bdata.entries[citekey]
+
+		cites 	= _str_to_list(entry.fields.get('Cites'))
+		cited_by= _str_to_list(entry.fields.get('Cited-by'))
+
+		# find target entries and add the respective keys
+		for target_key in cites:
+			if target_key == citekey:
+				print("removed self-citation in 'Cites' field from {}".format(citekey))
+				cites.remove(target_key)
+
+		for target_key in cited_by:
+			if target_key == citekey:
+				print("removed self-citation in 'Cited-by' field from {}".format(citekey))
+				cited_by.remove(target_key)
+
+		# overwrite
+		new_bdata.entries[citekey].fields['Cites'] 		= ', '.join(cites)
+		new_bdata.entries[citekey].fields['Cited-By'] 	= ', '.join(cited_by)
+
+	# Done. Put the new bibliography data in place
+	return new_bdata
+
 
 
 def sort_fields(bdata, fieldnames, sep=', '):

@@ -2,12 +2,14 @@
 '''This file containts the crosslink method and the interface to the reference-extracting pdf-extract tool.'''
 
 # TODO
-# 	- implement pdf-extract as ruby script instead of interfacing with the shell via subprocess
+# 	- implement pdf-extract as ruby script instead of interfacing with the shell via subprocess?
 #	- multiprocessing
 # 	- compare not only by DOIs but also ISBN, URI, ...
+#	- add timeout?
 
 # FIXME
-#	- papers not being read properly (e.g. Flack2014, Szathmary1997)
+#	- papers not being read properly (e.g. Flack2014, Szathmary1997, Watson2010)
+# 	- the own citekey or doi is sometimes also added
 
 import os
 import copy
@@ -16,13 +18,15 @@ import re
 from base64 import b64decode
 import subprocess
 import shutil
-
 import xml.etree.ElementTree as ET
+
 from PyPDF2 import PdfFileReader
 
 from pybtex.database import BibliographyData
 
 from .functions import _append_citekey
+from .timeout import timeout
+
 
 def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 	'''The crosslink method extracts citations from each pdf in the bibliography and checks if the target entries are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry.
@@ -84,7 +88,7 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 
 			target_citekey 	= _find_citekey_from_doi(bdata, target_doi)
 
-			if target_citekey is not None:
+			if target_citekey is not None and target_citekey != citekey:
 				# Add (one side of) link
 				cnt_added 	+= _append_citekey(new_bdata.entries[citekey], 'Cites', target_citekey)
 
@@ -105,7 +109,7 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 	return new_bdata
 
 
-def extract_citation_dois_from_pdf(path, max_num_pages=33, verbatim=True):
+def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 	'''Method to extract citations and their DOIs from a pdf file. Returns a list of the found DOIs or an empty list, if an error occured.'''
 
 	# Check, if installed

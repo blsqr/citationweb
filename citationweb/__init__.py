@@ -4,3 +4,4 @@
 # import all public (!) functions
 from .functions import *
 from .crosslink import *
+from .network import *
