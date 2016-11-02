@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	bdata 	= cweb.convert_url_to_doi(bdata)
 
 	# Crosslink bibliography entries by extracting citations from each pdf and checking if they are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry
-	# bdata 	= cweb.crosslink(bdata)
+	bdata 	= cweb.crosslink(bdata)
 
 	# Postprocessing
 	bdata 	= cweb.remove_self_citations(bdata)

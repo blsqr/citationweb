@@ -103,26 +103,28 @@ def plot_network(nw, filter_unconnected=True, mode='graphviz', **kwargs):
 
 		vprops 	= {
 			'label':		nw.vp.ckey,
-			'fontname': 	'sans-serif'
+			'fontname': 	'Helvetica bold',
+			'fontsize':		20,
+			'fontcolor':	'black'
 		}
 
 		eprops 	= {
-			'len': 			1,
+			'len': 			0.5,
 			'dir':			'forward',
 			'arrowsize': 	1.5,
 		}
 
-		gt.graphviz_draw(nw, size=(10,10), output=output,
+		gt.graphviz_draw(nw, size=(10,16), output=output,
 		                 vprops=vprops,
 		                 eprops=eprops,
 		                 layout='fdp',
-		                 ratio='auto',
+		                 ratio=10/16,
 		                 vcolor=nw.vp.num_cits,
 		                 vnorm=True,
-		                 vcmap=mpl.cm.get_cmap('viridis'),
+		                 vcmap=mpl.cm.get_cmap('Reds'),
 		                 sep=0.1,
 		                 vsize=1,
-		                 overlap='scalexy',
+		                 overlap='prism',
 		                 penwidth=2.5,
 		                 splines='curved')
 
