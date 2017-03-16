@@ -237,7 +237,7 @@ def _get_dois_from_xml(xml_str):
 
 	except ET.ParseError as xml_err:
 		print("\tError in parsing XML: {}\n\n{}\n".format(xml_err,_prepare_xml(xml_str)))
-		return dois
+		return False
 	else:
 		if len(root.findall("resolved_reference")) == 0:
 			print("\t(no citations found)")
@@ -255,6 +255,9 @@ def _find_citekey_from_doi(bdata, target_doi):
 	# NOTE consider making public?
 
 	# Checks
+	if target_doi == "":
+		return None
+
 	if not isinstance(bdata, BibliographyData):
 		raise TypeError("Expected {}, got {}.".format(type(BibliographyData), type(bdata)))
 
