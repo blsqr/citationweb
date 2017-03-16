@@ -55,7 +55,7 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 		# # for testing only Hordijk2013a
 		# if cnt[0] != 22:
 		# 		continue
-		print("\n\n{1:}/{2:}:\tExtracting citations from {0:}:\n".format(citekey, *cnt))
+		print("\n\n{1:}/{2:}:\tExtracting citations from {0:}:".format(citekey, *cnt))
 
 		if read_dois_from == 'bib':
 			target_dois = extract_citation_dois_from_field(bdata.entries[citekey])
@@ -129,7 +129,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 
 	num_pages 	= _count_pages(path)
 	if verbatim:
-		print("\tReading {} ({} pages)".format(os.path.basename(path), num_pages if num_pages != 0 else '?'))
+		print("\n\tReading {} ({} pages)".format(os.path.basename(path), num_pages if num_pages != 0 else '?'))
 
 	if num_pages > max_num_pages:
 		if verbatim:
