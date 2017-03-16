@@ -27,7 +27,7 @@ from pybtex.database import BibliographyData
 from .functions import _append_citekey
 from .timeout import timeout
 
-
+# TODO parallelise
 def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 	'''The crosslink method extracts citations from each pdf in the bibliography and checks if the target entries are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry.
 

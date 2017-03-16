@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 '''(Used for testing the functions of the citationweb package)'''
 
+import sys
 import citationweb as cweb
-
-# Settings
-in_file 	= "library_processed.bib"
-out_file	= "library_processed2.bib"
 
 
 if __name__ == '__main__':
+
+	if len(sys.argv) <= 1:
+		raise ValueError("No in_file supplied!")
+	elif len(sys.argv) == 2:
+		in_file 	= sys.argv[1]
+		out_file 	= "libs/_out/library.bib"
+	else:
+		in_file 	= sys.argv[1]
+		out_file 	= sys.argv[2]
+
+	print("\nPaths to input and output library set:\n  in:\t{}\n  out:\t{}\n".format(in_file, out_file))
+
 	# Import
 	bdata, comments	= cweb.import_bdata(in_file)
 
@@ -31,4 +40,3 @@ if __name__ == '__main__':
 
 	# Export
 	cweb.export_bdata(bdata, out_file, appendix=comments)
-
