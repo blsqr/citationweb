@@ -9,6 +9,7 @@
 * Make more general (not BibDesk-specific)
 * Save network data
 * Add network analysis, plotting, ...
+* Consistent way of marking files as unreadable
 
 ---
 
@@ -21,3 +22,4 @@
 	* Adding missing links
 	* Simple plotting of citation network
 	* Exporting the processed library
+	* Comments at the end of the bibfile are preserved

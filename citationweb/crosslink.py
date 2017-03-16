@@ -49,9 +49,8 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 	# Looping over all entries
 	for citekey in bdata.entries.keys():
 
-		# Initialise some variables
-		target_dois 	= [] # list of extracted DOIs
-		cnt 			= (cnt[0]+1, cnt[1]) # progress counter
+		# Initialise progress counter
+		cnt = (cnt[0]+1, cnt[1])
 
 		# # for testing only Hordijk2013a
 		# if cnt[0] != 22:
@@ -79,13 +78,28 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 			raise ValueError("Invalid value {} for read_dois_from argument. Choose between bib, pdf, and auto.".format(read_dois_from))
 
 
+		#Append found DOIs as a field to the bdata
+		if save_dois_to_field:
+			if isinstance(target_dois, list):
+				# regular case
+				extr_dois	= '; '.join(target_dois)
+			else:
+				# no citations found (could not read or too many pages)
+				extr_dois 	= ""
+
+			new_bdata.entries[citekey].fields['Extracted-DOIs'] = extr_dois
+
+
+		# Check if DOI extraction was successful
+		if not target_dois or not len(target_dois):
+			# no DOIs found
+			print("\tNo DOIs to crosslink! Continuing to next entry ...")
+			continue
+		else:
+			print("\n\tCrosslinking ...")
 
 		# Try to match the extracted DOIs or those found in the bibfile with entries from the bibliography.
 		for target_doi in target_dois:
-			if target_doi == '':
-				print("\t(marked as un-readable)")
-				break
-
 			target_citekey 	= _find_citekey_from_doi(bdata, target_doi)
 
 			if target_citekey is not None and target_citekey != citekey:
@@ -98,11 +112,6 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 
 			else:
 				print("\t{:<40} --x".format(target_doi))
-
-
-		#Append found DOIs as a field to the bdata
-		if save_dois_to_field:
-			new_bdata.entries[citekey].fields['Extracted-DOIs'] = '; '.join(target_dois)
 
 	print("\nAdded {} new links.\n".format(cnt_added))
 
@@ -125,7 +134,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 	if num_pages > max_num_pages:
 		if verbatim:
 			print("\tToo many (>{}) pages! Skipping file.".format(max_num_pages))
-		return []
+		return False
 
 	# Get citations and collect terminal prints + xml with results
 	try:
@@ -137,10 +146,10 @@ def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 		# does not work with this file
 		if verbatim:
 			print("\t(not readable)")
-		return ['']
+		return False
 
 	except KeyboardInterrupt:
-		print("\n-- Cancelled --")
+		print("\n--- Cancelled ---")
 		exit()
 
 	# extract DOIs from the XML output and return
@@ -157,7 +166,9 @@ def extract_citation_dois_from_pdfs(entry, **kwargs):
 		print("\tNo files associated with this entry.")
 
 	for path in paths:
-		target_dois 	+= extract_citation_dois_from_pdf(path, **kwargs)
+		new_dois 		= extract_citation_dois_from_pdf(path, **kwargs)
+		if new_dois:
+			target_dois += new_dois
 
 	return target_dois
 
