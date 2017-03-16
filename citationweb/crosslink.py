@@ -124,7 +124,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 
 	if num_pages > max_num_pages:
 		if verbatim:
-			print("too many (>{}) pages! Skipping file".format(max_num_pages))
+			print("\tToo many (>{}) pages! Skipping file.".format(max_num_pages))
 		return []
 
 	# Get citations and collect terminal prints + xml with results
@@ -151,8 +151,12 @@ def extract_citation_dois_from_pdfs(entry, **kwargs):
 	'''Wrapper for extracting citation DOIs from an bibliography entry, which might have multiple files attached'''
 
 	target_dois 	= []
+	paths 			= _resolve_filepaths(entry)
 
-	for path in _resolve_filepaths(entry):
+	if not len(paths):
+		print("\tNo files associated with this entry.")
+
+	for path in paths:
 		target_dois 	+= extract_citation_dois_from_pdf(path, **kwargs)
 
 	return target_dois
