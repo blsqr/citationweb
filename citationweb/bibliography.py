@@ -143,10 +143,11 @@ class Bibliography:
                 if not appdx_reached:
                     # Check if this line starts with the desired string
                     if line.startswith(start_str):
+                        # Yup. Reached the appendix now
                         appdx_reached = True
-                    continue
 
-                # Store this line
-                appdx += line
+                # Store this line, if in appdx
+                if appdx_reached:
+                    appdx += line
 
         self._appdx = appdx
