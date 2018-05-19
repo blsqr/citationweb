@@ -2,6 +2,8 @@
 to the bibtex file that is to be analysed.
 """
 
+import os
+
 from pybtex.database import BibliographyData, parse_file
 
 from citationweb.tools import load_cfg
@@ -77,8 +79,8 @@ class Bibliography:
     @creator.setter
     def creator(self, creator: str):
         """Sets the creator of this Bibliography file"""
-        if creator and creator not in self.CREATOR_PARAMS.keys():
-            creators = [k for k in self.CREATOR_PARAMS.keys()]
+        if creator and creator not in self.CREATORS.keys():
+            creators = [k for k in self.CREATORS.keys()]
             raise ValueError("Unsupported creator '{}'! Supported creators "
                              "are: {}".format(creator, ", ".join(creators)))
 
@@ -111,7 +113,8 @@ class Bibliography:
         self._data = parse_file(self.file, **load_kwargs)
 
         # Load the appendix
-        self._load_appdx(self.creator_params.get('load_appdx'))
+        if 'load_appdx' in self.creator_params:
+            self._load_appdx(**self.creator_params['load_appdx'])
 
     def _load_appdx(self, start_str: str) -> str:
         """This method extracts a part at the end of the bibfile, starting

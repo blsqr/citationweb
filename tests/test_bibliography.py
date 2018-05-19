@@ -5,7 +5,7 @@ from pkg_resources import resource_filename
 
 import pytest
 
-import citationweb as cweb
+from citationweb.bibliography import Bibliography
 
 # Fixtures --------------------------------------------------------------------
 
@@ -24,8 +24,15 @@ def bib_minimal(tmpdir) -> str:
 
 def test_init(bib_minimal):
     """Test the Bibliograpy class initialisation"""
-    bib = cweb.Bibliography(bib_minimal)
+    bib = Bibliography(bib_minimal)
 
     # Assert the file and the data is loaded
     assert bib.file
     assert bib.data
+
+    # Test different creators
+    Bibliography(bib_minimal, creator='BibDesk')
+
+    # Assert failure for unsupported creators
+    with pytest.raises(ValueError, match="Unsupported creator 'invalid'"):
+        Bibliography(bib_minimal, creator='invalid')
