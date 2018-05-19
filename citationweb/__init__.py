@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-'''This little package provides functions to read and parse a bibtex library, and work on the cited-by and cites keys to create a web of citations'''
+"""citationweb is a collection of tools to parse a bibtex file and generate
+a network of citations from it
+"""
 
-# import all public (!) functions
-from .functions import *
-from .crosslink import *
-from .network import *
+from .bibliography import Bibliography

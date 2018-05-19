@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Provides the CLI to the citationweb package"""
+
+if __name__ != '__main__':
+    raise RuntimeError("cweb CLI has to be run as __main__")
+
+import argparse
+
+import citationweb as cweb
+
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Analyse a web of citations.")
+parser.add_argument('bibfile_path',
+                    help="The path to the bibliography file.")
+parser.add_argument('-o', '--out',
+                    default=None, nargs='?',
+                    help="Where to write the output to. If not given, will "
+                         "add a file with current timestamp beside the given "
+                         "bibliography file.")
+parser.add_argument('-s', '--scan',
+                    default=False, action='store_true',
+                    help="If set, will scan linked files and try to extract "
+                         "DOIs of cited works.")
+parser.add_argument('-p', '--plot',
+                    default=False, action='store_true',
+                    help="If set, will create a plot of the created network.")
+# TODO add argument where to store the created network plot and file
+
+
+# CLI defined. Parse the arguments now.
+args = parser.parse_args()
+
+# Set up a bibfile
+
+# Extract DOIs from linked files
+
+# Perform crosslink
+
+# Export bibfile
+
+# Create network
+
+# Plot network
+
+# Save network

@@ -1,5 +1,6 @@
-*.bib
-citationweb/__pycache__
-*.sublime-workspace
+__pycache__
+*.sublime-*
 *.pdf
 *.pyc
+.pytest_cache
+.coverage

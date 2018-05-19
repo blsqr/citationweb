@@ -1,3 +1,0 @@
-matplotlib==1.5.1
-pybtex==0.20.1
-PyPDF2==1.26.0
