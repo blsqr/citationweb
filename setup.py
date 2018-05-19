@@ -8,12 +8,9 @@ setup(name='citationweb',
       author_email='yunussevinchan@gmail.com',
       license='',
       packages=['citationweb'],
-      install_requires=[
-            'pypdf2',
-            'pybtex',
-      ],
+      install_requires=['pypdf2', 'pybtex'],
       dependency_links=[
-            'https://github.com/CrossRef/pdfextract', # is a ruby gem
-            'https://git.skewed.de/count0/graph-tool', # has to be built
+        'https://github.com/CrossRef/pdfextract', # is a ruby gem
+        'https://git.skewed.de/count0/graph-tool', # has to be built
       ],
       zip_safe=False)
