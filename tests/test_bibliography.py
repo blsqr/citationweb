@@ -31,17 +31,6 @@ def bib_bibdesk(tmpdir) -> str:
     copyfile(src, dst)
     return dst
 
-@pytest.fixture
-def bib_bibdesk(tmpdir) -> str:
-    """Returns the path to a BibDesk bibliography file that is copied to a
-    temporary directory."""
-    src = resource_filename("tests", "libs/bibdesk.bib")
-    dst = tmpdir.join("tmp.bib")
-
-    # Copy the file to the temporary directory and return the path
-    copyfile(src, dst)
-    return str(dst)
-
 # Tests -----------------------------------------------------------------------
 
 def test_init(bib_minimal, bib_bibdesk):
