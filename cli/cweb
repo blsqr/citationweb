@@ -4,41 +4,42 @@
 if __name__ != '__main__':
     raise RuntimeError("cweb CLI has to be run as __main__")
 
-import sys
+import argparse
+
 import citationweb as cweb
 
-# TODO set up the argparser here
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Analyse a web of citations.")
+parser.add_argument('bibfile_path',
+                    help="The path to the bibliography file.")
+parser.add_argument('-o', '--out',
+                    default=None, nargs='?',
+                    help="Where to write the output to. If not given, will "
+                         "add a file with current timestamp beside the given "
+                         "bibliography file.")
+parser.add_argument('-s', '--scan',
+                    default=False, action='store_true',
+                    help="If set, will scan linked files and try to extract "
+                         "DOIs of cited works.")
+parser.add_argument('-p', '--plot',
+                    default=False, action='store_true',
+                    help="If set, will create a plot of the created network.")
+# TODO add argument where to store the created network plot and file
 
-if len(sys.argv) <= 1:
-    raise ValueError("No in_file supplied!")
-elif len(sys.argv) == 2:
-    in_file = sys.argv[1]
-    out_file = "libs/_out/library.bib"
-else:
-    in_file = sys.argv[1]
-    out_file = sys.argv[2]
 
-print("\nPaths to input and output library set:\n  in:\t{}\n  out:\t{}\n".format(in_file, out_file))
+# CLI defined. Parse the arguments now.
+args = parser.parse_args()
 
-# Import
-bdata, comments = cweb.import_bdata(in_file)
+# Set up a bibfile
 
-# Preprocessing
-bdata = cweb.convert_url_to_doi(bdata)
+# Extract DOIs from linked files
 
-# Crosslink bibliography entries by extracting citations from each pdf and checking if they are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry
-bdata = cweb.crosslink(bdata)
+# Perform crosslink
 
-# Postprocessing
-bdata = cweb.remove_self_citations(bdata)
-bdata = cweb.add_missing_links(bdata)
-bdata = cweb.sort_fields(bdata, ['Cites', 'Cited-By'])
+# Export bibfile
 
-# Analysis
-cnw = cweb.create_network(bdata)
+# Create network
 
-# Plotting
-cweb.plot_network(cnw, mode='graphviz', output='cnet.pdf')
+# Plot network
 
-# Export
-cweb.export_bdata(bdata, out_file, appendix=comments)
+# Save network
