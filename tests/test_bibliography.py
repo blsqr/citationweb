@@ -14,22 +14,22 @@ def bib_minimal(tmpdir) -> str:
     """Returns the path to a minimal bibliography file that is copied to a
     temporary directory."""
     src = resource_filename("tests", "libs/minimal.bib")
-    dst = tmpdir.join("tmp.bib")
+    dst = str(tmpdir.join("tmp.bib"))
 
     # Copy the file to the temporary directory and return the path
     copyfile(src, dst)
-    return str(dst)
+    return dst
 
 @pytest.fixture
 def bib_bibdesk(tmpdir) -> str:
     """Returns the path to a BibDesk bibliography file that is copied to a
     temporary directory."""
     src = resource_filename("tests", "libs/bibdesk.bib")
-    dst = tmpdir.join("tmp.bib")
+    dst = str(tmpdir.join("tmp.bib"))
 
     # Copy the file to the temporary directory and return the path
     copyfile(src, dst)
-    return str(dst)
+    return dst
 
 # Tests -----------------------------------------------------------------------
 
