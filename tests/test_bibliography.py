@@ -31,9 +31,20 @@ def bib_bibdesk(tmpdir) -> str:
     copyfile(src, dst)
     return dst
 
+@pytest.fixture
+def bib_bibdesk(tmpdir) -> str:
+    """Returns the path to a BibDesk bibliography file that is copied to a
+    temporary directory."""
+    src = resource_filename("tests", "libs/bibdesk.bib")
+    dst = tmpdir.join("tmp.bib")
+
+    # Copy the file to the temporary directory and return the path
+    copyfile(src, dst)
+    return str(dst)
+
 # Tests -----------------------------------------------------------------------
 
-def test_init(bib_minimal):
+def test_init(bib_minimal, bib_bibdesk):
     """Test the Bibliograpy class initialisation"""
     bib = Bibliography(bib_minimal)
 
@@ -45,7 +56,7 @@ def test_init(bib_minimal):
     # Invalid bibfile should raise an error
     with pytest.raises(FileNotFoundError, match="No such bibliography file"):
         Bibliography("foo/bar/invalid.bib")
-
+    
     # Assert failure for unsupported creators
     with pytest.raises(ValueError, match="Unsupported creator 'invalid'"):
         Bibliography(bib_minimal, creator='invalid')
