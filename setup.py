@@ -14,6 +14,7 @@ setup(name="citationweb",
       author_email="blsqr0@gmail.com",
       license="", # TODO
       packages=["citationweb"],
+      package_data=dict(citationweb=["*.yml"]),
       install_requires=INSTALL_DEPS,
       tests_require=TEST_DEPS,
       test_suite="pytest",
