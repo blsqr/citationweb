@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """This file containts the crosslink method and the interface to the reference-extracting pdf-extract tool."""
 
 # TODO

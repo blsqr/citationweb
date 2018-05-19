@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Here, network functionality is implemented"""
 
 import matplotlib as mpl

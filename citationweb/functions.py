@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """This file defines all the basic functions of the citationweb package, e.g. import/export and simple processing methods."""
 
 # TODO:

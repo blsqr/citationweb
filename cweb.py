@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """(Used for testing the functions of the citationweb package)"""
 
 import sys
