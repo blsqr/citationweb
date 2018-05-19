@@ -2,6 +2,7 @@
 ---
 language: python
 python:
+  - "3.4"
   - "3.5"
   - "3.6"
   # - "3.7-dev"  # 3.7 development branch; not yet working with PyYAML
@@ -11,5 +12,8 @@ install:
   - pip install .[test_deps]
 
 # command to run tests
-script: []
-  # - pytest
+script:
+  # Run the test suite
+  - python -m pytest -v tests/ --cov=citationweb --cov-report=term-missing
+  # Test the CLI
+  # TODO
