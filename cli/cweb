@@ -31,6 +31,7 @@ parser.add_argument('-p', '--plot',
 args = parser.parse_args()
 
 # Set up a bibfile
+bib = cweb.Bibliography(args.bibfile_path)
 
 # Extract DOIs from linked files
 
