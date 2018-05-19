@@ -33,7 +33,7 @@ def bib_bibdesk(tmpdir) -> str:
 
 # Tests -----------------------------------------------------------------------
 
-def test_init(bib_minimal, bib_bibdesk):
+def test_init(bib_minimal):
     """Test the Bibliograpy class initialisation"""
     bib = Bibliography(bib_minimal)
 
@@ -42,14 +42,20 @@ def test_init(bib_minimal, bib_bibdesk):
     assert bib.data
     assert bib.appdx is None
 
-    # Test different creators
-    bd_bib = Bibliography(bib_bibdesk, creator='BibDesk')
-
-    assert bd_bib.file
-    assert bd_bib.data
-    assert bd_bib.appdx
-    assert bd_bib.appdx.startswith('@comment{BibDesk')
+    # Invalid bibfile should raise an error
+    with pytest.raises(FileNotFoundError, match="No such bibliography file"):
+        Bibliography("foo/bar/invalid.bib")
 
     # Assert failure for unsupported creators
     with pytest.raises(ValueError, match="Unsupported creator 'invalid'"):
         Bibliography(bib_minimal, creator='invalid')
+
+def test_init_bibdesk(bib_bibdesk):
+    """Tests initialisation with BibDesk creator"""
+    bd_bib = Bibliography(bib_bibdesk, creator='BibDesk')
+
+    # Assert it is all there, especially the appendix
+    assert bd_bib.file
+    assert bd_bib.data
+    assert bd_bib.appdx
+    assert bd_bib.appdx.startswith('@comment{BibDesk')
