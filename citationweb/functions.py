@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''This file defines all the basic functions of the citationweb package, e.g. import/export and simple processing methods.'''
+"""This file defines all the basic functions of the citationweb package, e.g. import/export and simple processing methods."""
 
 # TODO:
 #   - improve behaviour of comment extraction by actually parsing opening and closing brackets of the comments section
@@ -16,7 +16,7 @@ from pybtex.database import BibliographyData, parse_file
 # -----------------------------------------------------------------------------
 
 def import_bdata(bibfile):
-    '''This method imports the bibliography from a file and returns its content as a BibliographyData object and a string of comments'''
+    """This method imports the bibliography from a file and returns its content as a BibliographyData object and a string of comments"""
 
     bdata = parse_file(bibfile)
     comments = extract_appendix(bibfile, "@comment{")
@@ -31,7 +31,7 @@ def import_bdata(bibfile):
 
 
 def export_bdata(bdata, targetfile, appendix=None):
-    '''Exports the BibliographyData object (and, if passed, an appendix like comments section) to a target.'''
+    """Exports the BibliographyData object (and, if passed, an appendix like comments section) to a target."""
     bdata.to_file(targetfile, 'bibtex')
 
     if appendix is not None:
@@ -46,10 +46,10 @@ def export_bdata(bdata, targetfile, appendix=None):
 
 
 def extract_appendix(filepath, start_str):
-    '''This method extracts a part at the end of a file, starting with a start_str, for example the @comment{} section or sections of a .bib file.
+    """This method extracts a part at the end of a file, starting with a start_str, for example the @comment{} section or sections of a .bib file.
 
     These sections are used in programs like BibDesk to store the information of static and smart folders, and are discarded when using parse_file of pybtex.database.
-    Note that this relies on having the appendix section at the end of the file.'''
+    Note that this relies on having the appendix section at the end of the file."""
 
     appdx = ''
     appdx_reached = False
@@ -70,7 +70,7 @@ def extract_appendix(filepath, start_str):
 # -----------------------------------------------------------------------------
 
 def add_missing_links(bdata):
-    '''Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there. Works in-place of the passed bibliography data.'''
+    """Checks the cites and cited-by fields of each bibliography entry and adds them to the respective targets, if they are not already there. Works in-place of the passed bibliography data."""
 
     # Checks
     if not isinstance(bdata, BibliographyData):
@@ -102,7 +102,7 @@ def add_missing_links(bdata):
 
 
 def remove_self_citations(bdata):
-    '''Removes the own citekey from the cites and cited-by fields'''
+    """Removes the own citekey from the cites and cited-by fields"""
 
     # Checks
     if not isinstance(bdata, BibliographyData):
@@ -139,7 +139,7 @@ def remove_self_citations(bdata):
 
 
 def sort_fields(bdata, fieldnames, sep=', '):
-    '''Sorts the content of the field with names inside the list fieldnames. Works in place of the bibliography data.'''
+    """Sorts the content of the field with names inside the list fieldnames. Works in place of the bibliography data."""
 
     # Checks
     if not isinstance(bdata, BibliographyData):
@@ -161,7 +161,7 @@ def sort_fields(bdata, fieldnames, sep=', '):
 
 
 def convert_url_to_doi(bdata):
-    '''Tries to extract the DOI from the Bdsk-url-N field and adds it as an extra field.'''
+    """Tries to extract the DOI from the Bdsk-url-N field and adds it as an extra field."""
 
     # Initialisation
     num_converted = 0
@@ -199,7 +199,7 @@ def convert_url_to_doi(bdata):
 # -----------------------------------------------------------------------------
 
 def _append_citekey(entry, fieldname, ckey, sep=', '):
-    '''Append a citekey to the entry.fields[fieldname] string of citekeys (if it does not exist already). Note, that this works directly on the passed entry.'''
+    """Append a citekey to the entry.fields[fieldname] string of citekeys (if it does not exist already). Note, that this works directly on the passed entry."""
     if entry is None:
         # there is no such entry, most probably because this method was called with the .__getitem__ or .get() in the function call and the key was not present
         return False
@@ -219,7 +219,7 @@ def _append_citekey(entry, fieldname, ckey, sep=', '):
 
 
 def _str_to_list(s, separators=None, remove_spaces=True):
-    '''Takes an entry string and parses it to a list. Sevaral separators can be passed and spaces can be removed before splitting the string to the list.'''
+    """Takes an entry string and parses it to a list. Sevaral separators can be passed and spaces can be removed before splitting the string to the list."""
 
     if s is None:
         return []
@@ -239,7 +239,7 @@ def _str_to_list(s, separators=None, remove_spaces=True):
 
 
 def _extract_doi_from_url(url, tld="http://dx.doi.org/"):
-    '''Extracts a DOI from a tld-type url specifying the doi, e.g. addresses starting with http://dx.doi.org/'''
+    """Extracts a DOI from a tld-type url specifying the doi, e.g. addresses starting with http://dx.doi.org/"""
 
     pos = url.find(tld)
 

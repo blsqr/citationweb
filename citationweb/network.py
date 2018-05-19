@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''Here, network functionality is implemented'''
+"""Here, network functionality is implemented"""
 
 import matplotlib as mpl
 
@@ -8,7 +8,7 @@ from pybtex.database import BibliographyData
 import graph_tool.all as gt
 
 def create_network(bdata, verbose=False):
-    '''Takes the bibliography data, analyses its cites field and returns a network of citations: vertices are publications, edges are (directed) citations.'''
+    """Takes the bibliography data, analyses its cites field and returns a network of citations: vertices are publications, edges are (directed) citations."""
 
 
     # Checks
@@ -67,7 +67,7 @@ def create_network(bdata, verbose=False):
 
 
 def plot_network(nw, filter_unconnected=True, mode='graphviz', **kwargs):
-    '''Plots a graphical presentation of the passed network. The view is specialised on citation networks.'''
+    """Plots a graphical presentation of the passed network. The view is specialised on citation networks."""
 
     if filter_unconnected:
         nw.set_vertex_filter(nw.vp.alone, inverted=True)

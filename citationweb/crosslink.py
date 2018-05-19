@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''This file containts the crosslink method and the interface to the reference-extracting pdf-extract tool.'''
+"""This file containts the crosslink method and the interface to the reference-extracting pdf-extract tool."""
 
 # TODO
 #   - implement pdf-extract as ruby script instead of interfacing with the shell via subprocess?
@@ -29,11 +29,11 @@ from .timeout import timeout
 
 # TODO parallelise
 def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
-    '''The crosslink method extracts citations from each pdf in the bibliography and checks if the target entries are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry.
+    """The crosslink method extracts citations from each pdf in the bibliography and checks if the target entries are in the bibliography -- if that is the case, the target citekey is added to the 'Cites' field of the bibliography entry.
 
     For extracting citations, the ruby pdf-extract tool by CrossRef is used: https://github.com/CrossRef/pdfextract
 
-    To turn the Bdsk-File-N fields of each bibliography entry into a readable path, ___ is used.'''
+    To turn the Bdsk-File-N fields of each bibliography entry into a readable path, ___ is used."""
 
     # Checks
     if not isinstance(bdata, BibliographyData):
@@ -119,7 +119,7 @@ def crosslink(bdata, save_dois_to_field=True, read_dois_from='auto'):
 
 
 def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
-    '''Method to extract citations and their DOIs from a pdf file. Returns a list of the found DOIs or an empty list, if an error occured.'''
+    """Method to extract citations and their DOIs from a pdf file. Returns a list of the found DOIs or an empty list, if an error occured."""
 
     # Check, if installed
     if shutil.which('pdf-extract') is None:
@@ -156,7 +156,7 @@ def extract_citation_dois_from_pdf(path, max_num_pages=42, verbatim=True):
 
 
 def extract_citation_dois_from_pdfs(entry, **kwargs):
-    '''Wrapper for extracting citation DOIs from an bibliography entry, which might have multiple files attached'''
+    """Wrapper for extracting citation DOIs from an bibliography entry, which might have multiple files attached"""
 
     target_dois = []
     paths = _resolve_filepaths(entry)
@@ -172,7 +172,7 @@ def extract_citation_dois_from_pdfs(entry, **kwargs):
     return target_dois
 
 def extract_citation_dois_from_field(entry):
-    '''Checks if there is a field 'Extracted-DOIs' in the entry, parses it to a list and returns it.'''
+    """Checks if there is a field 'Extracted-DOIs' in the entry, parses it to a list and returns it."""
 
     extracted_dois = entry.fields.get('Extracted-DOIs')
 
@@ -187,7 +187,7 @@ def extract_citation_dois_from_field(entry):
 
 
 def _resolve_filepaths(entry):
-    '''Turns the base64-encoded values from the Bdsk-File-N fields of an entry into actual filepaths.'''
+    """Turns the base64-encoded values from the Bdsk-File-N fields of an entry into actual filepaths."""
 
     paths = []
     n = 1
@@ -207,7 +207,7 @@ def _resolve_filepaths(entry):
     return paths
 
 def _prepare_xml(s):
-    '''Preprocesses the xml string to be readable by the XML parser'''
+    """Preprocesses the xml string to be readable by the XML parser"""
 
     # print("XML before:\n{}".format(s))
 
@@ -228,7 +228,7 @@ def _prepare_xml(s):
 
 
 def _get_dois_from_xml(xml_str):
-    '''This method parses an xml string and returns a list of found DOIs'''
+    """This method parses an xml string and returns a list of found DOIs"""
     dois = []
 
     try:
@@ -250,7 +250,7 @@ def _get_dois_from_xml(xml_str):
 
 
 def _find_citekey_from_doi(bdata, target_doi):
-    '''Loops over all entries in bibliography data and -- if found -- returns the citekey of an entry, otherwise returns None.'''
+    """Loops over all entries in bibliography data and -- if found -- returns the citekey of an entry, otherwise returns None."""
     # NOTE consider making public?
 
     # Checks
@@ -268,7 +268,7 @@ def _find_citekey_from_doi(bdata, target_doi):
 
 
 def _count_pages(filename):
-    '''Returns the number of pages of a PDF document'''
+    """Returns the number of pages of a PDF document"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return PdfFileReader(open(filename, 'rb')).getNumPages()
