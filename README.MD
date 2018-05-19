@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/blusquare/citationweb/badge.svg?branch=master)](https://coveralls.io/github/blusquare/citationweb?branch=master)
+
 # What is this?
 `citationweb` is a collection of Python tools to analyse a BibTeX bibliography, add citations from linked PDF files and visualise the resulting citation network structure.
 

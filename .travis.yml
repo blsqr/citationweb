@@ -9,7 +9,10 @@ python:
 
 # command to install dependencies
 install:
+  # Install the package
   - pip install .[test_deps]
+  # Install coveralls to supply test coverage to coveralls.io
+  - pip install python-coveralls
 
 # command to run tests
 script:
@@ -17,3 +20,7 @@ script:
   - python -m pytest -v tests/ --cov=citationweb --cov-report=term-missing
   # Test the CLI
   # TODO
+
+after_success:
+  # Run coveralls to submit test coverage
+  - coveralls
