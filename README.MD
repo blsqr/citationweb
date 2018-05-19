@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/blusquare/citationweb.svg?branch=master)](https://travis-ci.org/blusquare/citationweb)
 [![Coverage Status](https://coveralls.io/repos/github/blusquare/citationweb/badge.svg?branch=master)](https://coveralls.io/github/blusquare/citationweb?branch=master)
 
 _This README is very much WIP_
