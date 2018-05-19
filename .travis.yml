@@ -8,7 +8,7 @@ python:
 
 # command to install dependencies
 install:
-  - pip install .
+  - pip install .[test_deps]
 
 # command to run tests
 script: []
