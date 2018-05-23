@@ -1,7 +1,13 @@
-
+# This is the configuration file for the citationweb package
+# The top-level entries each correspond to a module, where they can be
+# loaded and make the config for that module available.
 ---
 bibliography:
+  # The Bibliography class supports some creator-specific behaviour, e.g.
+  # loading different parts of the bibliography file.
+  # These are configured here
   creators:
     BibDesk:
       load_appdx:
+        # The BibDesk appendix stores the static and smart groups as XML
         start_str: '@comment{BibDesk'
