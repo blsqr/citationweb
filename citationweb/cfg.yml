@@ -3,6 +3,9 @@
 # loaded and make the config for that module available.
 ---
 bibliography:
+  # The split string between DOIs in the `Referenced-Dois` field
+  refs_split_str: '; '
+
   # The Bibliography class supports some creator-specific behaviour, e.g.
   # loading different parts of the bibliography file.
   # These are configured here
@@ -11,3 +14,10 @@ bibliography:
       load_appdx:
         # The BibDesk appendix stores the static and smart groups as XML
         start_str: '@comment{BibDesk'
+
+      extract_refs:
+        skip_exiting: true
+
+# -----------------------------------------------------------------------------
+pdf_extract:
+  max_num_pages: 42
