@@ -19,5 +19,9 @@ setup(name="citationweb",
       tests_require=TEST_DEPS,
       test_suite="pytest",
       extras_require=dict(test_deps=TEST_DEPS),
-      scripts=["cli/cweb"]
+      scripts=["cli/cweb"],
+      dependency_links=[
+          # pdf-extract ruby gem
+          "https://github.com/CrossRef/pdfextract"
+      ]
       )
