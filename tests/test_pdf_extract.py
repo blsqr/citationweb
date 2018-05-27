@@ -26,8 +26,8 @@ def test_search_for_doi():
         ("10.1073/pnas.1618722114",
          "Optimal incentives for collective intelligence "
          "Richard P. Mann, Dirk Helbing "
-         "Proceedings of the National Academy of Sciences "
-         "May 2017, 201618722"),
+         "Proceedings of the National Academy of Sciences May 2017"),
+        (None, "foo bar"),
     ]
 
     for doi, citation in citations:

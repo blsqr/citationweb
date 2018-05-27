@@ -200,18 +200,25 @@ def _search_for_doi(citation: str, min_score: float=MIN_SCORE) -> Union[str, Non
     r = requests.get('https://search.crossref.org/dois', params=payload)
 
     # Read the result, json-encoded
-    res = r.json()[0]
-
-    # Check the score
-    if res.get('score') < min_score:
-        log.debug("  Did not reach the minimum score for this citation: %f<%f",
-                  res.get('score'), min_score)
+    res = r.json()
+    if not res:
+        log.warning("  No matches for search '%s'!", citation)
         return
 
-    log.debug("  Score: %f", res.get('score'))
+    # Only look at the first entry
+    entry = res[0]
+    log.debug("  Looking at first entry ...\n%s", entry)
+
+    # Check the score
+    if entry.get('score') < min_score:
+        log.warning("  Search result score %s is below the minimum score %s",
+                    entry.get('score'), min_score)
+        return
+
+    log.debug("  Score: %f", entry.get('score'))
 
     # Get the DOI
-    doi = res.get('doi')
+    doi = entry.get('doi')
 
     if not doi:
         log.debug("  Could not find a DOI for this citation.")
