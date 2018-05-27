@@ -151,6 +151,14 @@ def _get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
     if not ref_node:
         log.debug("No references were available or could be resolved.")
         return []
+    log.debug("Found %d reference nodes.", len(ref_nodes))
+
+    # Check if the order parameter starts at 1
+    order_vals = [r.get('order') for r in ref_nodes]
+    order_vals = [int(order) for order in order_vals if order is not None]
+    if min(order_vals) > 1:
+        log.warning("Extracted references do not start at 1. Probably a block "
+                    "of references was not detected as such...")
 
     # Extract DOIs
     dois = [_get_doi_from_ref(r) for r in ref_nodes]
