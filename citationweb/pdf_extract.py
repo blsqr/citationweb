@@ -1,6 +1,7 @@
 """This module implements functions to extract information from PDF files"""
 
 import os
+import re
 import logging
 import warnings
 import shutil
@@ -167,58 +168,70 @@ def _get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
     return [doi for doi in dois if doi is not None]
 
 def _get_doi_from_ref(ref) -> Union[str, None]:
-	"""Given a reference as an XML element, tries to extract the doi form it.
+    """Given a reference as an XML element, tries to extract the doi form it.
 
-	First, tries to find the doi key. If that is not available, makes a call
-	to crossref to find the doi by name of the publication.
-	"""
-	doi = ref.get('doi')
+    First, tries to find the doi key. If that is not available, makes a call
+    to crossref to find the doi by name of the publication.
+    """
+    doi = ref.get('doi')
 
-	if doi:
-		return doi
+    if doi:
+        return doi
 
-	# else: could not be found
-	# if there is no citation, we can't do anything about this
-	if not ref.text:
-		log.debug("No citation available to search for DOI.")
-		return None
+    # else: could not be found
+    # if there is no citation, we can't do anything about this
+    if not ref.text:
+        log.debug("No citation available to search for DOI.")
+        return None
 
-	# try to search for it
-	return _search_for_doi(ref.text)
+    # try to search for it
+    return _search_for_doi(ref.text)
 
 def _search_for_doi(citation: str, min_score: float=MIN_SCORE) -> Union[str, None]:
-	"""Given a citation text, searches via CrossRef to find the DOI
+    """Given a citation text, searches via CrossRef to find the DOI
 
-	If no DOI could be found or the score is too low, returns None
-	"""
-	log.debug("Searching for citation ...\n  %s", citation)
+    If no DOI could be found or the score is too low, returns None
+    """
+    log.debug("Searching for citation ...\n  %s", citation)
 
-	# Search via the CrossRef search API
-	# https://search.crossref.org/help/api
-	payload = dict(rows=1, q=citation)
-	r = requests.get('https://search.crossref.org/dois', params=payload)
+    # Search via the CrossRef search API
+    # https://search.crossref.org/help/api
+    payload = dict(rows=1, q=citation)
+    r = requests.get('https://search.crossref.org/dois', params=payload)
 
-	# Read the result, json-encoded
-	res = r.json()
+    # Read the result, json-encoded
+    res = r.json()[0]
 
-	# Check the score
-	if res.get('score') < min_score:
-		log.debug("  Did not reach the minimum score for this citation: %f<%f",
-		          res.get('score'), min_score)
-		return
+    # Check the score
+    if res.get('score') < min_score:
+        log.debug("  Did not reach the minimum score for this citation: %f<%f",
+                  res.get('score'), min_score)
+        return
 
-	log.debug("  Score: %f", res.get('score'))
+    log.debug("  Score: %f", res.get('score'))
 
-	# Get the DOI
-	doi = res.get('doi')
+    # Get the DOI
+    doi = res.get('doi')
 
-	if not doi:
-		log.debug("  Could not find a DOI for this citation.")
-		return
+    if not doi:
+        log.debug("  Could not find a DOI for this citation.")
+        return
 
-	log.debug("  Found DOI corresponding to citation:  %s", doi)
-	return doi
-	
+    log.debug("  Found DOI corresponding to citation:  %s", doi)
+
+    # Remove the link part of the DOI
+    matches = re.findall(r'http[s]?:\/\/d?x?\.?doi.org\/(.*)', doi)
+    # NOTE we can assume that the response was already including a DOI
+
+    if not matches:
+        raise ValueError("Could not match DOI: " + str(doi))
+
+    # Use that DOI
+    doi = matches[0]
+
+    # Done now. :)
+    return doi
+    
 
 # -----------------------------------------------------------------------------
 # PDF tools
