@@ -3,8 +3,13 @@
 
 from setuptools import setup
 
-INSTALL_DEPS = ["PyYAML>=3.12", "pypdf2>=1.26", "pybtex>=0.21"]
-TEST_DEPS    = ["pytest>=3.4.0", "pytest-cov>=2.5.1"]
+INSTALL_DEPS = [
+                "PyYAML>=3.12",
+                "pypdf2>=1.26",
+                "pybtex>=0.21",
+                "requests>=2.18"
+                ]
+TEST_DEPS = ["pytest>=3.4.0", "pytest-cov>=2.5.1"]
 
 setup(name="citationweb",
       version="1.0-alpha",

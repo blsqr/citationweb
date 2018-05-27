@@ -3,9 +3,12 @@
 import os
 import logging
 import warnings
-from typing import List
 import shutil
+import subprocess
+from xml.etree import ElementTree
+from typing import List, Union
 
+import requests
 import PyPDF2 as pdf
 
 from citationweb.tools import load_cfg
@@ -15,6 +18,7 @@ cfg = load_cfg(__name__)
 log = logging.getLogger(__name__)
 
 MAX_NUM_PAGES = cfg['max_num_pages']
+MIN_SCORE = cfg['min_doi_search_score']
 
 # -----------------------------------------------------------------------------
 # Custom error messages
@@ -41,12 +45,15 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
     
     Args:
         path (str): The path to the PDF file
+        max_num_pages (TYPE, optional): Description
     
     Returns:
         List[str]: The list of DOIs
     
     Raises:
-        EnvironmentError: Description
+        EnvironmentError: If pdf-extract was not installed
+        PdfNotReadable: If the pdf was not readable
+        TooManyPages: If the pdf was too long
     """
 
     # Check, if pdf-extract installed
@@ -72,7 +79,7 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
              num_pages if num_pages != 0 else '?')
 
     # Define the command and call it using subprocess
-    cmd = ("pdf-extract", "extract", "--resolved_references")
+    cmd = ("pdf-extract", "extract", "--references")
     #, "--set", "reference_flex:4")
 
     try:
@@ -85,19 +92,19 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
         raise PdfNotReadable(path, str(exc))
 
     except KeyboardInterrupt:
-        log.warning("--- Cancelled reading {} ---".format(pdf_name))
+        log.warning("--- Cancelled reading %s ---", pdf_name)
         raise 
 
     # extract DOIs from the XML output and return
     dois = _get_dois_from_xml(output)
-
     log.info("  Extracted %d DOIs from %s.", len(dois), pdf_name)
 
     return dois
 
 # -----------------------------------------------------------------------------
+# reference resolving
 
-def _get_dois_from_xml(xml_str: str) -> List[str]:
+def _get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
     """This method parses an xml string and returns a list of found DOIs"""
     
     def prepare_xml(s: str) -> str:
@@ -129,7 +136,7 @@ def _get_dois_from_xml(xml_str: str) -> List[str]:
 
     try:
         # Get the root of the xml tree
-        root = ET.fromstring(xml_processed)
+        root = ElementTree.fromstring(xml_processed)
 
     except ET.ParseError as xml_err:
         log.error("Error in parsing XML: %s\n\n%s\n", xml_err, xml_processed)
@@ -138,15 +145,75 @@ def _get_dois_from_xml(xml_str: str) -> List[str]:
     else:
         log.debug("XML parsing succeeded.")
     
-    # Get the resolved references
-    res_ref = root.findall("resolved_reference")
+    # Get the reference nodes
+    ref_nodes = root.findall(ref_key)
 
-    if not res_ref:
+    if not ref_node:
         log.debug("No references were available or could be resolved.")
         return []
 
-    # Extract DOIs and return them
-    return [rr.get('doi') for rr in res_ref]
+    # Extract DOIs
+    dois = [_get_doi_from_ref(r) for r in ref_nodes]
+
+    # Remove the Nones and return
+    return [doi for doi in dois if doi is not None]
+
+def _get_doi_from_ref(ref) -> Union[str, None]:
+	"""Given a reference as an XML element, tries to extract the doi form it.
+
+	First, tries to find the doi key. If that is not available, makes a call
+	to crossref to find the doi by name of the publication.
+	"""
+	doi = ref.get('doi')
+
+	if doi:
+		return doi
+
+	# else: could not be found
+	# if there is no citation, we can't do anything about this
+	if not ref.text:
+		log.debug("No citation available to search for DOI.")
+		return None
+
+	# try to search for it
+	return _search_for_doi(ref.text)
+
+def _search_for_doi(citation: str, min_score: float=MIN_SCORE) -> Union[str, None]:
+	"""Given a citation text, searches via CrossRef to find the DOI
+
+	If no DOI could be found or the score is too low, returns None
+	"""
+	log.debug("Searching for citation ...\n  %s", citation)
+
+	# Search via the CrossRef search API
+	# https://search.crossref.org/help/api
+	payload = dict(rows=1, q=citation)
+	r = requests.get('https://search.crossref.org/dois', params=payload)
+
+	# Read the result, json-encoded
+	res = r.json()
+
+	# Check the score
+	if res.get('score') < min_score:
+		log.debug("  Did not reach the minimum score for this citation: %f<%f",
+		          res.get('score'), min_score)
+		return
+
+	log.debug("  Score: %f", res.get('score'))
+
+	# Get the DOI
+	doi = res.get('doi')
+
+	if not doi:
+		log.debug("  Could not find a DOI for this citation.")
+		return
+
+	log.debug("  Found DOI corresponding to citation:  %s", doi)
+	return doi
+	
+
+# -----------------------------------------------------------------------------
+# PDF tools
 
 def _count_pages(path: str, **read_kwargs) -> int:
     """Returns the number of pages of a PDF document"""
