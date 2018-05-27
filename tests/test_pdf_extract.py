@@ -19,3 +19,19 @@ def pdf_files() -> List[str]:
     
 
 # Tests -----------------------------------------------------------------------
+
+def test_search_for_doi():
+    """Test whether searching for DOIs via CrossRef API calls works"""
+    citations = [ # format: (target DOI, search text)
+        ("10.1073/pnas.1618722114",
+         "Optimal incentives for collective intelligence "
+         "Richard P. Mann, Dirk Helbing "
+         "Proceedings of the National Academy of Sciences "
+         "May 2017, 201618722"),
+    ]
+
+    for doi, citation in citations:
+        print("Citation: ", citation)
+        print("Expected DOI: ", doi)
+        assert doi == pdfx._search_for_doi(citation)
+        print("Search was successful.\n")
