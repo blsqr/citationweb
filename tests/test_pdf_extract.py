@@ -27,11 +27,21 @@ def test_search_for_doi():
          "Optimal incentives for collective intelligence "
          "Richard P. Mann, Dirk Helbing "
          "Proceedings of the National Academy of Sciences May 2017"),
-        (None, "foo bar"),
+        ("10.1073/pnas.1618722114",
+         "Optimal incentives for collective intelligence"),
+        ("10.1038/ncomms12285",
+         "High-order species interactions shape ecosystem diversity"),
+        ("10.1098/rstb.2016.0175",
+         "The major synthetic evolutionary transitions R.V. Solé"),
+        (None, "boVszEQfwmKItVV8qebp"),  # should not give a result
     ]
 
     for doi, citation in citations:
-        print("Citation: ", citation)
-        print("Expected DOI: ", doi)
-        assert doi == pdfx._search_for_doi(citation)
+        print("Citation:      ", citation)
+        print("Expected DOI:  ", doi)
+        assert doi == pdfx.search_for_doi(citation)
         print("Search was successful.\n")
+
+    # Test error messages
+    with pytest.raises(ValueError, match="A score was required"):
+        pdfx.search_for_doi(citations[0], require_score=True)

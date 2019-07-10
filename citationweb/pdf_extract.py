@@ -19,6 +19,7 @@ cfg = load_cfg(__name__)
 log = logging.getLogger(__name__)
 
 MAX_NUM_PAGES = cfg['max_num_pages']
+REQUIRE_SCORE = cfg['require_score']
 MIN_SCORE = cfg['min_doi_search_score']
 
 # -----------------------------------------------------------------------------
@@ -67,7 +68,7 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
     pdf_name = os.path.basename(path)
 
     # Get the page count and check whether it exceeds the maximum allowed num
-    num_pages = _count_pages(path)
+    num_pages = count_pages(path)
 
     if num_pages > max_num_pages:
         raise TooManyPages(path,
@@ -97,7 +98,7 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
         raise 
 
     # extract DOIs from the XML output and return
-    dois = _get_dois_from_xml(output)
+    dois = get_dois_from_xml(output)
     log.info("  Extracted %d DOIs from %s.", len(dois), pdf_name)
 
     return dois
@@ -105,7 +106,7 @@ def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
 # -----------------------------------------------------------------------------
 # reference resolving
 
-def _get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
+def get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
     """This method parses an xml string and returns a list of found DOIs"""
     
     def prepare_xml(s: str) -> str:
@@ -162,38 +163,52 @@ def _get_dois_from_xml(xml_str: str, ref_key: str='reference') -> List[str]:
                     "of references was not detected as such...")
 
     # Extract DOIs
-    dois = [_get_doi_from_ref(r) for r in ref_nodes]
+    dois = [get_doi_from_ref(r) for r in ref_nodes]
 
     # Remove the Nones and return
     return [doi for doi in dois if doi is not None]
 
-def _get_doi_from_ref(ref) -> Union[str, None]:
+def get_doi_from_ref(ref) -> Union[str, None]:
     """Given a reference as an XML element, tries to extract the doi form it.
 
     First, tries to find the doi key. If that is not available, makes a call
     to crossref to find the doi by name of the publication.
     """
     doi = ref.get('doi')
-
     if doi:
         return doi
+    # else: no DOI available
 
-    # else: could not be found
-    # if there is no citation, we can't do anything about this
+    # If there is no citation text, we can't do anything about this.
     if not ref.text:
-        log.debug("No citation available to search for DOI.")
+        log.debug("No citation text available to search for DOI.")
         return None
 
-    # try to search for it
-    return _search_for_doi(ref.text)
+    # Yay, let's search for it via the crossref API
+    return search_for_doi(ref.text)
 
-def _search_for_doi(citation: str,
-                    min_score: float=MIN_SCORE) -> Union[str, None]:
+def search_for_doi(citation: str, *, require_score: bool=REQUIRE_SCORE,
+                   min_score: float=MIN_SCORE) -> Union[str, None]:
     """Given a citation text, searches via CrossRef to find the DOI
-
+    
     If no DOI could be found or the score is too low, returns None
+    
+    Args:
+        citation (str): The search string
+        require_score (bool, optional): Whether to require that a score is
+            provided by the API
+        min_score (float, optional): If so, the minimum score that is to be
+            reached in order to
+    
+    Returns:
+        Union[str, None]: If found (and the score is high enough), the DOI.
+            Otherwise None.
+    
+    Raises:
+        ValueError: If a score was required but None could be found or if there
+            was an error in stripping a http prefix from the DOI.
     """
-    log.debug("Searching for citation ...\n  %s", citation)
+    log.debug("Searching for DOI of citation:  %s", citation)
 
     # Search via the CrossRef search API
     # https://search.crossref.org/help/api
@@ -204,47 +219,33 @@ def _search_for_doi(citation: str,
     res = r.json()
     if not res:
         log.warning("  No matches for search '%s'!", citation)
-        return
+        return None
 
     # Only look at the first entry
     entry = res[0]
     log.debug("  Looking at first entry ...\n%s", entry)
 
     # Check the score
-    if entry.get('score') < min_score:
+    log.debug("  Score:  %s", entry.get('score'))
+    if require_score and not entry.get('score'):
+        raise ValueError("A score was required, but the API request did not "
+                         "return one ...")
+    
+    elif entry.get('score') and entry.get('score') < min_score:
         log.warning("  Search result score %s is below the minimum score %s",
                     entry.get('score'), min_score)
-        return
+        return None
 
-    log.debug("  Score: %f", entry.get('score'))
-
-    # Get the DOI
+    # Get the DOI.
     doi = entry.get('doi')
-
-    if not doi:
-        log.debug("  Could not find a DOI for this citation.")
-        return
-
     log.debug("  Found DOI corresponding to citation:  %s", doi)
-
-    # Remove the link part of the DOI
-    matches = re.findall(r'http[s]?:\/\/d?x?\.?doi.org\/(.*)', doi)
-    # NOTE we can assume that the response was already including a DOI
-
-    if not matches:
-        raise ValueError("Could not match DOI: " + str(doi))
-
-    # Use that DOI
-    doi = matches[0]
-
-    # Done now. :)
     return doi
     
 
 # -----------------------------------------------------------------------------
 # PDF tools
 
-def _count_pages(path: str, **read_kwargs) -> int:
+def count_pages(path: str, **read_kwargs) -> int:
     """Returns the number of pages of a PDF document"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

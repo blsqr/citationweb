@@ -21,4 +21,5 @@ bibliography:
 # -----------------------------------------------------------------------------
 pdf_extract:
   max_num_pages: 42
+  require_score: false
   min_doi_search_score: 60
