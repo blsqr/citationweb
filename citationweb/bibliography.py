@@ -9,14 +9,13 @@ from base64 import b64decode
 
 from pybtex.database import BibliographyData, Entry, parse_file
 
-from citationweb.pdf_extract import extract_refs
-from citationweb.tools import load_cfg
+from .pdf_extract import extract_refs as _extract_refs
+from .tools import load_cfg
 
 # Local constants
 cfg = load_cfg(__name__)
 log = logging.getLogger(__name__)
 
-REFS_SPLIT_STR = cfg['refs_split_str']
 
 # -----------------------------------------------------------------------------
 
@@ -29,6 +28,7 @@ class Bibliography:
     """
     # Class variables
     CREATORS = cfg['creators']
+    REFS_SPLIT_STR = cfg['refs_split_str']
 
     def __init__(self, file: str, creator: str=None):
         """Load the content of the given bibtex file.
@@ -128,9 +128,14 @@ class Bibliography:
 
         for cite_key, entry in self.data.entries.items():
             log.debug("Entry:  %s", cite_key)
+            
+            # Get already extracted references
+            refs = self._extracted_refs(entry)
+            log.debug("  Currently have %d reference(s) extracted.", len(refs))
+
             # Check if references were already extracted and whether to skip
-            if params.get('skip_existing') and self._extracted_refs(entry):
-                log.debug("  References were already extracted.")
+            if refs and params.get('skip_existing'):
+                log.debug("  References were already extracted. Skipping ...")
                 continue
 
             filepaths = self._resolve_filepaths(entry)
@@ -140,8 +145,18 @@ class Bibliography:
                 log.debug("  Could not find a file path for this entry.")
                 continue
 
-            # Check the PDF files
+            # Check the PDF files for references (and DOIs) and aggregate them
+            refs = set(refs)
+            for path in filepaths:
+                refs.update(_extract_refs(path))
 
+            log.debug("  Now have a total of %d references.", len(refs))
+
+            # Store back to the entry
+            entry.fields['referenced-dois'] = self.REFS_SPLIT_STR.join(refs)
+            log.debug("  Updated references in entry %s.", cite_key)
+
+        log.info("Finished extracting references.")
 
 
     # Private methods .........................................................
@@ -182,7 +197,6 @@ class Bibliography:
         Returns:
             str: The appendix of the bibfile
         """
-
         appdx = ''
         appdx_reached = False
 
@@ -217,7 +231,7 @@ class Bibliography:
             return []
 
         # There were entries: make a list of DOIs and strip possible whitespace
-        return refd_dois.split(REFS_SPLIT_STR)
+        return refd_dois.split(self.REFS_SPLIT_STR)
 
     def _resolve_filepaths(self, entry: Entry) -> List[str]:
         """Depending on the chosen creator, extracts the file path from the 

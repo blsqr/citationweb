@@ -12,7 +12,7 @@ from typing import List, Union
 import requests
 import PyPDF2 as pdf
 
-from citationweb.tools import load_cfg
+from .tools import load_cfg
 
 # Local constants
 cfg = load_cfg(__name__)
@@ -214,6 +214,7 @@ def search_for_doi(citation: str, *, require_score: bool=REQUIRE_SCORE,
     # https://search.crossref.org/help/api
     payload = dict(rows=1, q=citation)
     r = requests.get('https://search.crossref.org/dois', params=payload)
+    # TODO Should check timeout here
 
     # Read the result, json-encoded
     res = r.json()
