@@ -187,7 +187,8 @@ def _get_doi_from_ref(ref) -> Union[str, None]:
     # try to search for it
     return _search_for_doi(ref.text)
 
-def _search_for_doi(citation: str, min_score: float=MIN_SCORE) -> Union[str, None]:
+def _search_for_doi(citation: str,
+                    min_score: float=MIN_SCORE) -> Union[str, None]:
     """Given a citation text, searches via CrossRef to find the DOI
 
     If no DOI could be found or the score is too low, returns None

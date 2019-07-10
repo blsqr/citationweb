@@ -5,6 +5,7 @@ to the bibtex file that is to be analysed.
 import os
 import logging
 from typing import List
+from base64 import b64decode
 
 from pybtex.database import BibliographyData, Entry, parse_file
 

@@ -12,7 +12,7 @@ CFG_PATH = resource_filename('citationweb', 'cfg.yml')
 def load_cfg(modstr: str=None) -> dict:
     """Loads the config file for the citationweb package"""
     with open(CFG_PATH) as cfg_file:
-        cfg = yaml.load(cfg_file.read())
+        cfg = yaml.safe_load(cfg_file.read())
 
     if modstr:
         # From the modstr, get the module
