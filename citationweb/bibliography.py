@@ -26,11 +26,11 @@ class Bibliography:
     informations, e.g. by adding missing DOIs or extracting references.
     """
 
-    def __init__(self, file: str, *, creator: str=None, **update_cfg):
+    def __init__(self, filepath: str, *, creator: str=None, **update_cfg):
         """Load the content of the given bibtex file.
         
         Args:
-            file (str): The bibtex file to load and process
+            filepath (str): The bibtex file to load and process
             creator (str, optional): The creator of the BibTeX file. This will
                 have an impact on how the file is read and written.
             **update_cfg: Further arguments updating the default configuration
@@ -42,20 +42,21 @@ class Bibliography:
                                      copy.deepcopy(update_cfg))
 
         # Initialise property-managed attributes
-        self._file = None
+        self._filepath = None
         self._creator = None
         self._data = None
         self._appendix = None
 
         # Store attributes
         self._refs_split_str = self.cfg['refs_split_str']
-        self.file = file
+        self.filepath = filepath
         self.creator = creator
 
         # Load the bibliography data
         self._load()
 
-        log.info("Bibliography initialised.")
+        log.info("Bibliography initialised with %d entries.",
+                 len(self.entries))
 
 
     # Properties ..............................................................
@@ -66,18 +67,20 @@ class Bibliography:
         return self._cfg
 
     @property
-    def file(self) -> str:
+    def filepath(self) -> str:
         """Returns the path to the associated file"""
-        return self._file
+        return self._filepath
 
-    @file.setter
-    def file(self, path: str):
+    @filepath.setter
+    def filepath(self, path: str):
         """Stores the file property, performing a check if it exists."""
-        if not os.path.isfile(path):
-            raise FileNotFoundError("No such bibliography file: "+str(path))
+        path = os.path.expanduser(path)
 
-        self._file = path
-        log.debug("Associated bibliography file:  %s", self.file)
+        if not os.path.isfile(path):
+            raise FileNotFoundError("No file found at: {} !".format(path))
+
+        self._filepath = path
+        log.debug("Associated bibliography file:  %s", self.filepath)
     
     @property
     def data(self) -> BibliographyData:
@@ -219,6 +222,12 @@ class Bibliography:
 
         log.info("Finished extracting references.")
 
+    def crosslink(self):
+        """Using the information from the referenced DOIs of each entry, tries
+        to match with other cite keys from within the bibliography and link
+        those by adding the cite keys to the ``cites`` and ``cited-by`` fields.
+        """
+        raise NotImplementedError()
 
     # Helpers .................................................................
 
@@ -231,10 +240,10 @@ class Bibliography:
         Args:
             **parse_kwargs: Passed to pybtex.database.parse_file
         """
-        log.info("Loading bibliography file ...")
+        log.info("Loading bibliography file (%s) ...", self.filepath)
 
         # Load the bibliography data
-        self._data = parse_file(self.file, **parse_kwargs)
+        self._data = parse_file(self.filepath, **parse_kwargs)
 
         # Load the appendix
         if self.creator_params.get('load_appendix'):
@@ -261,7 +270,7 @@ class Bibliography:
         appendix = ''
         appendix_reached = False
 
-        with open(self.file) as bibfile:
+        with open(self.filepath) as bibfile:
             for line in bibfile:
                 if not appendix_reached:
                     # Check if this line starts with the desired string

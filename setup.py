@@ -4,11 +4,15 @@
 from setuptools import setup
 
 INSTALL_DEPS = [
+    "scipy>=1.3",
+    "numpy>=1.13",
     "PyYAML>=3.12",
     "pypdf2>=1.26",
     "pybtex>=0.21",
     "requests>=2.18",
-    "networkx>=2.3"
+    "networkx>=2.3",
+    "pygraphviz>=1.5",
+    "matplotlib>=3.0"
 ]
 TEST_DEPS = [
     "pytest>=3.4.0",

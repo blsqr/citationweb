@@ -6,40 +6,87 @@ if __name__ != '__main__':
 
 import argparse
 
-import citationweb as cweb
+# Set up the argument parser --------------------------------------------------
+parser = argparse.ArgumentParser(
+    description="Analyse a bibliography file, add further information to it "
+        "and create a network representation of citations.")
 
-# Set up the argument parser
-parser = argparse.ArgumentParser(description="Analyse a web of citations.")
+# Loading of bibfile
 parser.add_argument('bibfile_path',
     help="The path to the bibliography file.")
+parser.add_argument('--creator',
+    nargs='?', default='BibDesk', choices=('BibDesk',),
+    help="Which program created the given bibliography file.")
+
+# Modification of bibfile
 parser.add_argument('-o', '--out',
-    default=None, nargs='?',
     help="Where to write the output to. If not given, will add a file with "
          "current timestamp beside the given bibliography file.")
-parser.add_argument('-s', '--scan',
-    default=False, action='store_true',
+parser.add_argument('--find-dois',
+    action='store_true',
+    help="If set, will try to find DOIs for entries that don't yet have one.")
+parser.add_argument('--extract-refs',
+    action='store_true',
     help="If set, will scan linked files and try to extract DOIs of cited "
          "works.")
-parser.add_argument('-p', '--plot',
-    default=False, action='store_true',
-    help="If set, will create a plot of the created network.")
-# TODO add argument where to store the created network plot and file
+parser.add_argument('--crosslink',
+    action='store_true',
+    help="If set, will crosslink references _within_ the bibliography by "
+         "extending the `cites` and `cited-by` fields of the bibliography.")
+
+# Creation, plotting, and saving of the citationweb
+parser.add_argument('--draw',
+    action='store_true',
+    help="If set, will create a plot of the citation web and show it.")
+parser.add_argument('--save-graph',
+    action='store_true',
+    help="Saves the citation web in GraphML format.")
+    # TODO allow specifying path
 
 
+# -----------------------------------------------------------------------------
 # CLI defined. Parse the arguments now.
 args = parser.parse_args()
 
+import os
+import sys
+import logging
+import citationweb as cweb
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(levelname)-8s %(module)-15s %(message)s')
+log = logging.getLogger(__name__)
+
+
 # Set up a bibfile
-bib = cweb.Bibliography(args.bibfile_path)
+bib = cweb.Bibliography(args.bibfile_path, creator=args.creator)
+
+# Update DOIs
+if args.find_dois:
+    bib.find_DOIs()
 
 # Extract DOIs from linked files
+if args.extract_refs:
+    bib.extract_refs()
 
 # Perform crosslink
+if args.crosslink:
+    bib.crosslink()
 
 # Export bibfile
+# bib.save() # TODO
+
+# Only need to continue if plotting is desired.
+if not args.draw:
+    log.info("Not plotting ...")
+    sys.exit(0)
 
 # Create network
+web = cweb.CitationWeb(bib)
 
 # Plot network
+web.draw()
 
 # Save network
+if args.save_graph:
+    web.save()

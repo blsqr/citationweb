@@ -9,11 +9,13 @@ crossref:
   require_score: false
   min_doi_search_score: 60
 
-entry: {}
+reference:
+  # The split string between DOIs in the `Referenced-Dois`, `cites`, and
+  # `cited-by` fields
+  refs_split_str: &refs_split_str ', '  # FIXME should this be a ;?
 
 bibliography:
-  # The split string between DOIs in the `Referenced-Dois` field
-  refs_split_str: '; '
+  refs_split_str: *refs_split_str
 
   # The Bibliography class supports some creator-specific behaviour, e.g.
   # loading different parts of the bibliography file.
@@ -33,4 +35,9 @@ bibliography:
       - year
 
 citationweb:
-  foo: bar
+  draw_kwargs:
+    edge_color: silver
+    cmap: viridis
+
+    font_size: 8
+    font_family: monospace
