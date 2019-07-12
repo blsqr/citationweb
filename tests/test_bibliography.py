@@ -40,7 +40,7 @@ def test_init(bib_minimal, bib_bibdesk):
     # Assert the file and the data is loaded
     assert bib.file
     assert bib.data
-    assert bib.appdx is None
+    assert bib.appendix is None
 
     # Invalid bibfile should raise an error
     with pytest.raises(FileNotFoundError, match="No such bibliography file"):
@@ -57,5 +57,6 @@ def test_init_bibdesk(bib_bibdesk):
     # Assert it is all there, especially the appendix
     assert bd_bib.file
     assert bd_bib.data
-    assert bd_bib.appdx
-    assert bd_bib.appdx.startswith('@comment{BibDesk')
+    assert bd_bib.entries
+    assert bd_bib.appendix
+    assert bd_bib.appendix.startswith('@comment{BibDesk')

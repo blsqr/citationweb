@@ -1,7 +1,43 @@
-
+# This is the configuration file for the citationweb package
+# The top-level entries each correspond to a module, where they can be
+# loaded and make the config for that module available.
 ---
+pdf_extract:
+  max_num_pages: 42
+
+crossref:
+  require_score: false
+  min_doi_search_score: 60
+
+reference:
+  # The split string between DOIs in the `Referenced-Dois`, `cites`, and
+  # `cited-by` fields
+  refs_split_str: &refs_split_str ', '  # FIXME should this be a ;?
+
 bibliography:
+  refs_split_str: *refs_split_str
+
+  # The Bibliography class supports some creator-specific behaviour, e.g.
+  # loading different parts of the bibliography file.
+  # These are configured here
   creators:
     BibDesk:
-      load_appdx:
+      load_appendix:
+        # The BibDesk appendix stores the static and smart groups as XML
         start_str: '@comment{BibDesk'
+
+      can_extract_refs_from_pdfs: true
+
+  find_dois:
+    search_fields:
+      - title
+      - author
+      - year
+
+citationweb:
+  draw_kwargs:
+    edge_color: silver
+    cmap: viridis
+
+    font_size: 8
+    font_family: monospace

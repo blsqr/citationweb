@@ -1,6 +1,5 @@
 __pycache__
 *.sublime-*
-*.pdf
 *.pyc
 .pytest_cache
 .coverage
