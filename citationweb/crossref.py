@@ -16,7 +16,8 @@ MIN_SCORE = cfg['min_doi_search_score']
 
 # -----------------------------------------------------------------------------
 
-def search_for_doi(query: str, *, require_score: bool=REQUIRE_SCORE,
+def search_for_doi(query: Union[dict, str], *,
+                   require_score: bool=REQUIRE_SCORE,
                    min_score: float=MIN_SCORE,
                    expected_title: str=None, expected_year: str=None
                    ) -> Union[str, None]:
@@ -43,10 +44,13 @@ def search_for_doi(query: str, *, require_score: bool=REQUIRE_SCORE,
         ValueError: If a score was required but None could be found or if there
             was an error in stripping a http prefix from the DOI.
     """
+    if not isinstance(query, dict):
+        query = dict(q=query)
+
     log.debug("Searching for DOI using query:  %s", query)
 
     # Search via the CrossRef search API, https://search.crossref.org/help/api
-    payload = dict(rows=1, q=query)
+    payload = dict(rows=1, **query)
     r = requests.get('https://search.crossref.org/dois', params=payload)
     # TODO Should check timeout here
 

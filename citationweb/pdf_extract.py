@@ -184,7 +184,7 @@ def get_doi_from_ref(ref) -> Union[str, None]:
         return None
 
     # Yay, let's search for it via the crossref API
-    return search_for_doi(ref.text)
+    return search_for_doi({'query.bibliographic': ref.text})
 
 
 # -----------------------------------------------------------------------------
