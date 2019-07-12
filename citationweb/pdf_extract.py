@@ -1,7 +1,6 @@
 """This module implements functions to extract information from PDF files"""
 
 import os
-import re
 import logging
 import warnings
 import shutil
@@ -9,18 +8,17 @@ import subprocess
 from xml.etree import ElementTree
 from typing import List, Union
 
-import requests
 import PyPDF2 as pdf
 
 from .tools import load_cfg
+from .crossref import search_for_doi
+
 
 # Local constants
 cfg = load_cfg(__name__)
 log = logging.getLogger(__name__)
 
 MAX_NUM_PAGES = cfg['max_num_pages']
-REQUIRE_SCORE = cfg['require_score']
-MIN_SCORE = cfg['min_doi_search_score']
 
 # -----------------------------------------------------------------------------
 # Custom error messages
@@ -42,7 +40,8 @@ class PdfNotReadable(PdfExtractError):
 
 # -----------------------------------------------------------------------------
 
-def extract_refs(path: str, *, max_num_pages=MAX_NUM_PAGES) -> List[str]:
+def extract_refs_from_pdf(path: str, *,
+                          max_num_pages=MAX_NUM_PAGES) -> List[str]:
     """Given the path to a PDF file, tries to extract the referenced DOIs.
     
     Args:
@@ -187,61 +186,6 @@ def get_doi_from_ref(ref) -> Union[str, None]:
     # Yay, let's search for it via the crossref API
     return search_for_doi(ref.text)
 
-def search_for_doi(citation: str, *, require_score: bool=REQUIRE_SCORE,
-                   min_score: float=MIN_SCORE) -> Union[str, None]:
-    """Given a citation text, searches via CrossRef to find the DOI
-    
-    If no DOI could be found or the score is too low, returns None
-    
-    Args:
-        citation (str): The search string
-        require_score (bool, optional): Whether to require that a score is
-            provided by the API
-        min_score (float, optional): If so, the minimum score that is to be
-            reached in order to
-    
-    Returns:
-        Union[str, None]: If found (and the score is high enough), the DOI.
-            Otherwise None.
-    
-    Raises:
-        ValueError: If a score was required but None could be found or if there
-            was an error in stripping a http prefix from the DOI.
-    """
-    log.debug("Searching for DOI of citation:  %s", citation)
-
-    # Search via the CrossRef search API
-    # https://search.crossref.org/help/api
-    payload = dict(rows=1, q=citation)
-    r = requests.get('https://search.crossref.org/dois', params=payload)
-    # TODO Should check timeout here
-
-    # Read the result, json-encoded
-    res = r.json()
-    if not res:
-        log.warning("  No matches for search '%s'!", citation)
-        return None
-
-    # Only look at the first entry
-    entry = res[0]
-    log.debug("  Looking at first entry ...\n%s", entry)
-
-    # Check the score
-    log.debug("  Score:  %s", entry.get('score'))
-    if require_score and not entry.get('score'):
-        raise ValueError("A score was required, but the API request did not "
-                         "return one ...")
-    
-    elif entry.get('score') and entry.get('score') < min_score:
-        log.warning("  Search result score %s is below the minimum score %s",
-                    entry.get('score'), min_score)
-        return None
-
-    # Get the DOI.
-    doi = entry.get('doi')
-    log.debug("  Found DOI corresponding to citation:  %s", doi)
-    return doi
-    
 
 # -----------------------------------------------------------------------------
 # PDF tools

@@ -3,14 +3,16 @@ to the bibtex file that is to be analysed.
 """
 
 import os
+import copy
 import logging
-from typing import List
 from base64 import b64decode
+from typing import List, Tuple, Union
 
 from pybtex.database import BibliographyData, Entry, parse_file
 
-from .pdf_extract import extract_refs as _extract_refs
-from .tools import load_cfg
+from .pdf_extract import extract_refs_from_pdf
+from .crossref import search_for_doi
+from .tools import load_cfg, recursive_update
 
 # Local constants
 cfg = load_cfg(__name__)
@@ -20,33 +22,33 @@ log = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 class Bibliography:
-    """A Bibliography instance attaches to a bibtex file and provides the OOP
-    interface to analyse the corresponding citation network.
-    
-    Attributes:
-        CREATORS (list): A list of supported creator programmes
+    """A Bibliography instance attaches to a BibTeX file and can extend its
+    informations, e.g. by adding missing DOIs or extracting references.
     """
-    # Class variables
-    CREATORS = cfg['creators']
-    REFS_SPLIT_STR = cfg['refs_split_str']
 
-    def __init__(self, file: str, creator: str=None):
+    def __init__(self, file: str, *, creator: str=None, **update_cfg):
         """Load the content of the given bibtex file.
         
         Args:
             file (str): The bibtex file to load and process
-            creator (str, optional): The creator of the bibtex file. This will
+            creator (str, optional): The creator of the BibTeX file. This will
                 have an impact on how the file is read and written.
+            **update_cfg: Further arguments updating the default configuration
         """
         log.info("Initialising Bibliography ...")
+
+        # Store configuration
+        self._cfg = recursive_update(copy.deepcopy(cfg),
+                                     copy.deepcopy(update_cfg))
 
         # Initialise property-managed attributes
         self._file = None
         self._creator = None
         self._data = None
-        self._appdx = None
+        self._appendix = None
 
-        # Store properties
+        # Store attributes
+        self._refs_split_str = self.cfg['refs_split_str']
         self.file = file
         self.creator = creator
 
@@ -57,6 +59,11 @@ class Bibliography:
 
 
     # Properties ..............................................................
+
+    @property
+    def cfg(self) -> dict:
+        """Returns the configuration of this object"""
+        return self._cfg
 
     @property
     def file(self) -> str:
@@ -78,9 +85,14 @@ class Bibliography:
         return self._data
     
     @property
-    def appdx(self) -> str:
+    def entries(self):
+        """Returns the BibliographyData's entries"""
+        return self._data.entries
+    
+    @property
+    def appendix(self) -> str:
         """Returns the appendix of the bibfile"""
-        return self._appdx
+        return self._appendix
 
     @property
     def creator(self) -> str:
@@ -88,12 +100,12 @@ class Bibliography:
         return self._creator
 
     @creator.setter
-    def creator(self, creator: str):
+    def creator(self, creator: Union[str, None]):
         """Sets the creator of this Bibliography file"""
-        if creator and creator not in self.CREATORS.keys():
-            creators = [k for k in self.CREATORS.keys()]
-            raise ValueError("Unsupported creator '{}'! Supported creators "
-                             "are: {}".format(creator, ", ".join(creators)))
+        if creator and creator not in self.cfg['creators']:
+            raise ValueError("Unsupported creator '{}'! Available: {}"
+                             "".format(creator,
+                                       ", ".join(self.cfg['creators'])))
 
         self._creator = creator
 
@@ -105,28 +117,83 @@ class Bibliography:
         action is available for a creator.
         """
         if self.creator:
-            return self.CREATORS[self.creator]
+            return self.cfg['creators'][self.creator]
         return dict()
 
     # Public methods ..........................................................
 
     def save(self, path: str=None):
-        """Saves the current state of the bibtex data to
+        """Saves the current state of the bibtex data to a new file at the
         Args:
             path (str, optional): Description
         """
         # TODO
 
-    def extract_refs(self):
-        """Extracts the references of linked pdf files."""
-        params = self.creator_params.get('extract_refs')
+    def find_DOIs(self, *, search_fields: Tuple[str]=None, **search_kwargs):
+        """Goes over all entries and if a DOI is missing, attempts to find it
+        by making a crossref API request.
+        """
+        def generate_query(entry, *, fields: Tuple[str]) -> str:
+            """Helper function to generate a query using certain fields"""
+            return "; ".join([str(entry.fields.get(field))
+                              for field in fields if entry.fields.get(field)])
 
-        if not params:
-            log.info("Extracting references not supported for creator %s.",
-                     self.creator)
-            return
+        # Determine the search fields, if not given
+        if not search_fields:
+            search_fields = tuple(self.cfg['find_dois']['search_fields'])
 
-        for cite_key, entry in self.data.entries.items():
+        log.info("Finding missing DOIs for %d entries ...", len(self.entries))
+        n = 0
+
+        for cite_key, entry in self.entries.items():
+            log.debug("Entry:  %s", cite_key)
+
+            if entry.fields.get('doi'):
+                continue
+
+            # Generate the query
+            query = generate_query(entry, fields=search_fields)
+
+            # Search for it
+            doi = search_for_doi(query, **search_kwargs,
+                                 expected_title=entry.fields.get('title'),
+                                 expected_year=entry.fields.get('year'))
+
+        log.info("Found %d previously missing DOI%s.",
+                 n, "s" if n != 1 else "")
+
+    def extract_refs(self, *, from_pdfs: bool=None, from_crossref: bool=False,
+                     skip_existing: bool=True):
+        """For all entries, extract the references they make to other works.
+
+        This can happen in two ways: By looking at the PDF file and extracting
+        the references from there or by making API calls to CrossRef.
+        """
+        def get_from_pdfs(entry: Entry, *, refs: set):
+            """Extracts the references from PDF files of an entry"""
+            filepaths = self._resolve_filepaths(entry)
+            log.debug("  Found %d associated file(s).", len(filepaths))
+
+            for path in filepaths:
+                refs.update(extract_refs_from_pdf(path))
+            return refs
+
+        def get_from_crossref(entry: Entry, *, refs: set):
+            raise NotImplementedError("from_crossref")
+
+        # Parse parameters
+        supports_pdf = self.creator_params.get('can_extract_refs_from_pdfs')
+        if from_pdfs is None:
+            from_pdfs = supports_pdf
+        
+        if from_pdfs and not supports_pdf:
+            raise ValueError("Extracting references not supported for "
+                             "bibliography creator '{}'!".format(self.creator))
+
+        # Go over all entries and extract the information
+        log.info("Extracting references for %d entries ...", len(self.entries))
+
+        for cite_key, entry in self.entries.items():
             log.debug("Entry:  %s", cite_key)
             
             # Get already extracted references
@@ -138,28 +205,22 @@ class Bibliography:
                 log.debug("  References were already extracted. Skipping ...")
                 continue
 
-            filepaths = self._resolve_filepaths(entry)
+            if from_pdfs:
+                refs = get_from_pdfs(entry, refs=refs)
 
-            if not filepaths:
-                # Could not resolve a file path for this one
-                log.debug("  Could not find a file path for this entry.")
-                continue
-
-            # Check the PDF files for references (and DOIs) and aggregate them
-            refs = set(refs)
-            for path in filepaths:
-                refs.update(_extract_refs(path))
+            if from_crossref:
+                refs = get_from_crossref(entry, refs=refs)
 
             log.debug("  Now have a total of %d references.", len(refs))
 
             # Store back to the entry
-            entry.fields['referenced-dois'] = self.REFS_SPLIT_STR.join(refs)
+            entry.fields['referenced-dois'] = self._refs_split_str.join(refs)
             log.debug("  Updated references in entry %s.", cite_key)
 
         log.info("Finished extracting references.")
 
 
-    # Private methods .........................................................
+    # Helpers .................................................................
 
     def _load(self, **parse_kwargs):
         """Load the file associated with this instance.
@@ -176,10 +237,10 @@ class Bibliography:
         self._data = parse_file(self.file, **parse_kwargs)
 
         # Load the appendix
-        if 'load_appdx' in self.creator_params:
-            self._load_appdx(**self.creator_params['load_appdx'])
+        if self.creator_params.get('load_appendix'):
+            self._load_appendix(**self.creator_params['load_appendix'])
 
-    def _load_appdx(self, start_str: str) -> str:
+    def _load_appendix(self, *, start_str: str) -> str:
         """This method extracts a part at the end of the bibfile, starting
         with a start_str, for example the @comment{} section or sections of a
         bibtex file.
@@ -192,27 +253,27 @@ class Bibliography:
         file.
         
         Args:
-            start_str (str): The string that indicates the start of the appdx
+            start_str (str): The string that indicates the start of the appendix
         
         Returns:
             str: The appendix of the bibfile
         """
-        appdx = ''
-        appdx_reached = False
+        appendix = ''
+        appendix_reached = False
 
         with open(self.file) as bibfile:
             for line in bibfile:
-                if not appdx_reached:
+                if not appendix_reached:
                     # Check if this line starts with the desired string
                     if line.startswith(start_str):
                         # Yup. Reached the appendix now
-                        appdx_reached = True
+                        appendix_reached = True
 
-                # Store this line, if in appdx
-                if appdx_reached:
-                    appdx += line
+                # Store this line, if in appendix
+                if appendix_reached:
+                    appendix += line
 
-        self._appdx = appdx
+        self._appendix = appendix
 
     def _extracted_refs(self, entry: Entry) -> List[str]:
         """Return a list of extracted references, i.e. list of DOIs, for the
@@ -231,7 +292,7 @@ class Bibliography:
             return []
 
         # There were entries: make a list of DOIs and strip possible whitespace
-        return refd_dois.split(self.REFS_SPLIT_STR)
+        return refd_dois.split(self._refs_split_str)
 
     def _resolve_filepaths(self, entry: Entry) -> List[str]:
         """Depending on the chosen creator, extracts the file path from the 
@@ -267,7 +328,9 @@ class Bibliography:
                 match = re.findall(r"(Users\/.*\/.*?.pdf)\\", decoded)
 
                 # Use the first match to create the appropriate path
+                log.debug("  Found a file match: %s", match[0])
                 paths.append("/" + match[0])
+                # TODO Is this correct?
 
                 # Look at the next Bdsk-File-n field
                 n += 1

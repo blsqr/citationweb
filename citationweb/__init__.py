@@ -3,3 +3,4 @@ a network of citations from it
 """
 
 from .bibliography import Bibliography
+from .citationweb import CitationWeb
